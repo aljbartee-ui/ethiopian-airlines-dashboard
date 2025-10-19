@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 3px solid #4080FF;
+            padding-bottom: 10px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-public { background-color: #ff6b6b; }
+        .status-admin { background-color: #51cf66; }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4080FF;
+            box-shadow: 0 0 0 3px rgba(64, 128, 255, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4080FF, #57A9FB);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(64, 128, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .upload-area {
+            border: 3px dashed #4080FF;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #57A9FB;
+            background: #f0f4ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #23C343;
+            background: #f0fff4;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+
+        .chart-controls {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 2px solid #e9ecef;
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .toggle-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #4080FF;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .chart-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .chart-option:hover {
+            border-color: #4080FF;
+            box-shadow: 0 2px 8px rgba(64, 128, 255, 0.1);
+        }
+
+        .chart-option-info {
+            flex: 1;
+        }
+
+        .chart-option-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .chart-option-desc {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .data-mode-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .date-range-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .date-input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .date-input-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .date-input-group input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .date-input-group input[type="date"]:focus {
+            outline: none;
+            border-color: #4080FF;
+            box-shadow: 0 0 0 3px rgba(64, 128, 255, 0.1);
+        }
+
+        .clear-dates-btn {
+            padding: 10px 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            align-self: flex-end;
+        }
+
+        .clear-dates-btn:hover {
+            background: #5a6268;
+        }
+
+        .data-mode-option {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .data-mode-option.active {
+            border-color: #4080FF;
+            background: #f0f4ff;
+        }
+
+        .data-mode-option:hover {
+            border-color: #57A9FB;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 25px;
+            margin-top: 25px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .chart-container h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .chart-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px;
+            color: #666;
+        }
+
+        .no-data h3 {
+            margin-bottom: 15px;
+            color: #999;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .data-mode-selector {
+                flex-direction: column;
+            }
+            
+            .toggle-group {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Sales Dashboard</h1>
+            <p>Dynamic Excel Report Visualization</p>
+        </div>
+
+        <!-- System Status -->
+        <div class="card">
+            <h2>System Status</h2>
+            <div id="system-status">
+                <span class="status-indicator status-public"></span>
+                <span id="status-text">Public Mode</span>
+            </div>
+        </div>
+
+        <!-- Admin Login -->
+        <div class="card" id="admin-login-card">
+            <h2>Admin Login</h2>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" class="form-control" placeholder="Enter admin username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="form-control" placeholder="Enter admin password">
+            </div>
+            <button onclick="adminLogin()" class="btn btn-primary">🔐 Login as Admin</button>
+            <button onclick="adminLogout()" class="btn btn-danger" id="logout-btn" style="display: none; margin-left: 10px;">🚪 Logout</button>
+            <div id="login-result"></div>
+        </div>
+
+        <!-- Admin Panel -->
+        <div class="card" id="admin-panel" style="display: none;">
+            <h2>Admin Panel</h2>
+            
+            <div class="upload-area" onclick="document.getElementById('file-input').click()">
+                <h3>📁 Upload Excel File</h3>
+                <p>Click here or drag and drop your sales report (.xlsx, .xls)</p>
+                <p style="font-size: 0.9rem; color: #666; margin-top: 10px;">Maximum file size: 16MB</p>
+            </div>
+            <input type="file" id="file-input" accept=".xlsx,.xls" style="display: none;" onchange="handleFileSelect(event)">
+            
+            <div id="upload-result"></div>
+        </div>
+
+        <!-- Chart Controls -->
+        <div class="card" id="chart-controls" style="display: none;">
+            <h2>📈 Chart Controls</h2>
+            
+            <div class="control-section">
+                <h3>Data Display Mode</h3>
+                <div class="data-mode-selector">
+                    <div class="data-mode-option active" data-mode="revenue" onclick="selectDataMode('revenue')">
+                        <div class="chart-option-title">💰 Revenue</div>
+                        <div class="chart-option-desc">Show dollar amounts</div>
+                    </div>
+                    <div class="data-mode-option" data-mode="tickets" onclick="selectDataMode('tickets')">
+                        <div class="chart-option-title">🎫 Tickets</div>
+                        <div class="chart-option-desc">Show transaction counts</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>📅 Date Range Filter</h3>
+                <div class="date-range-selector">
+                    <div class="date-input-group">
+                        <label for="start-date">Start Date</label>
+                        <input type="date" id="start-date" onchange="updateDateRange()">
+                    </div>
+                    <div class="date-input-group">
+                        <label for="end-date">End Date</label>
+                        <input type="date" id="end-date" onchange="updateDateRange()">
+                    </div>
+                    <button onclick="clearDateRange()" class="clear-dates-btn">Clear Dates</button>
+                </div>
+                <div id="date-range-info" style="font-size: 0.9rem; color: #666; margin-top: 10px;"></div>
+            </div>
+
+            <div class="control-section">
+                <h3>Chart Selection</h3>
+                <div id="chart-options">
+                    <!-- Chart options will be loaded dynamically -->
+                </div>
+            </div>
+
+            <button onclick="generateSelectedCharts()" class="btn btn-primary" style="width: 100%; margin-top: 20px;">
+                📊 Generate Selected Charts
+            </button>
+        </div>
+
+        <!-- Sales Analytics -->
+        <div class="card">
+            <h2>Sales Analytics</h2>
+            <div id="data-info">
+                <div class="alert alert-info">No data available. Please upload a sales report.</div>
+            </div>
+            
+            <div id="charts-container">
+                <div class="no-data">
+                    <h3>No Data Available</h3>
+                    <p>Please contact the administrator to upload sales data.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+        let selectedDataMode = 'revenue';
+        let selectedCharts = ['by_agent', 'by_payment', 'by_hour', 'by_day'];
+        let chartOptions = [];
+        let startDate = null;
+        let endDate = null;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminStatus();
+            loadCurrentData();
+            loadChartOptions();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // File upload drag and drop
+            const uploadArea = document.querySelector('.upload-area');
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileUpload(files[0]);
+                }
+            });
+        }
+
+        // Admin authentication
+        async function adminLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showAlert('Please enter both username and password', 'error', 'login-result');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }),
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('Login successful!', 'success', 'login-result');
+                    updateAdminStatus(true);
+                } else {
+                    showAlert(data.error || 'Login failed', 'error', 'login-result');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('Login error occurred', 'error', 'login-result');
+            }
+        }
+
+        async function adminLogout() {
+            try {
+                const response = await fetch('/api/admin/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('Logged out successfully', 'info', 'login-result');
+                    updateAdminStatus(false);
+                } else {
+                    showAlert(data.error || 'Logout failed', 'error', 'login-result');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        async function checkAdminStatus() {
+            try {
+                const response = await fetch('/api/admin/status', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                updateAdminStatus(data.logged_in);
+            } catch (error) {
+                console.error('Error checking admin status:', error);
+            }
+        }
+
+        function updateAdminStatus(isLoggedIn) {
+            const statusIndicator = document.querySelector('.status-indicator');
+            const statusText = document.getElementById('status-text');
+            const adminPanel = document.getElementById('admin-panel');
+            const chartControls = document.getElementById('chart-controls');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            if (isLoggedIn) {
+                statusIndicator.className = 'status-indicator status-admin';
+                statusText.textContent = 'Admin Online';
+                adminPanel.style.display = 'block';
+                chartControls.style.display = 'block';
+                logoutBtn.style.display = 'inline-block';
+            } else {
+                statusIndicator.className = 'status-indicator status-public';
+                statusText.textContent = 'Public Mode';
+                adminPanel.style.display = 'none';
+                chartControls.style.display = 'none';
+                logoutBtn.style.display = 'none';
+            }
+        }
+
+        // File handling
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFileUpload(file);
+            }
+        }
+
+        async function handleFileUpload(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                showAlert('Please select a valid Excel file (.xlsx or .xls)', 'error', 'upload-result');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                showAlert('Uploading and processing file...', 'info', 'upload-result');
+                
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(`File "${data.filename}" uploaded successfully! Found ${data.sheets.length} sheet(s) with ${data.total_rows} rows.`, 'success', 'upload-result');
+                    loadCurrentData();
+                } else {
+                    showAlert(data.error || 'Upload failed', 'error', 'upload-result');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showAlert('Upload error occurred', 'error', 'upload-result');
+            }
+        }
+
+        // Data loading
+        async function loadCurrentData() {
+            try {
+                const response = await fetch('/api/data', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    currentData = await response.json();
+                    displayDataInfo();
+                    generateSelectedCharts();
+                } else {
+                    document.getElementById('data-info').innerHTML = '<div class="alert alert-info">No data available. Please upload a sales report.</div>';
+                    document.getElementById('charts-container').innerHTML = '<div class="no-data"><h3>No Data Available</h3><p>Please contact the administrator to upload sales data.</p></div>';
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function displayDataInfo() {
+            if (!currentData) return;
+
+            const infoHtml = `
+                <div class="alert alert-success">
+                    <strong>📊 Current Dataset:</strong> ${currentData.filename}<br>
+                    <strong>📅 Uploaded:</strong> ${new Date(currentData.upload_date).toLocaleString()}<br>
+                    <strong>📋 Sheets:</strong> ${currentData.sheets.join(', ')}<br>
+                    <strong>📈 Total Rows:</strong> ${currentData.total_rows.toLocaleString()}
+                </div>
+            `;
+            
+            document.getElementById('data-info').innerHTML = infoHtml;
+        }
+
+        // Chart options
+        async function loadChartOptions() {
+            try {
+                const response = await fetch('/api/charts/options', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    chartOptions = data.chart_types;
+                    renderChartOptions();
+                }
+            } catch (error) {
+                console.error('Error loading chart options:', error);
+            }
+        }
+
+        function renderChartOptions() {
+            const container = document.getElementById('chart-options');
+            
+            const html = chartOptions.map(option => `
+                <div class="chart-option">
+                    <div class="chart-option-info">
+                        <div class="chart-option-title">${option.name}</div>
+                        <div class="chart-option-desc">${option.type} chart</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" ${selectedCharts.includes(option.id) ? 'checked' : ''} 
+                               onchange="toggleChart('${option.id}')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+
+        function toggleChart(chartId) {
+            const index = selectedCharts.indexOf(chartId);
+            if (index > -1) {
+                selectedCharts.splice(index, 1);
+            } else {
+                selectedCharts.push(chartId);
+            }
+        }
+
+        function selectDataMode(mode) {
+            selectedDataMode = mode;
+            
+            // Update UI
+            document.querySelectorAll('.data-mode-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+        }
+
+        function updateDateRange() {
+            startDate = document.getElementById('start-date').value;
+            endDate = document.getElementById('end-date').value;
+            
+            // Update info text
+            const infoDiv = document.getElementById('date-range-info');
+            if (startDate || endDate) {
+                let text = '📅 Filtering: ';
+                if (startDate && endDate) {
+                    text += `${startDate} to ${endDate}`;
+                } else if (startDate) {
+                    text += `From ${startDate} onwards`;
+                } else {
+                    text += `Up to ${endDate}`;
+                }
+                infoDiv.innerHTML = `<strong>${text}</strong>`;
+                infoDiv.style.color = '#4080FF';
+            } else {
+                infoDiv.innerHTML = '';
+            }
+        }
+
+        function clearDateRange() {
+            document.getElementById('start-date').value = '';
+            document.getElementById('end-date').value = '';
+            startDate = null;
+            endDate = null;
+            document.getElementById('date-range-info').innerHTML = '';
+            
+            // Regenerate charts without date filter
+            if (currentData) {
+                generateSelectedCharts();
+            }
+        }
+
+        // Chart generation
+        async function generateSelectedCharts() {
+            if (!currentData) {
+                await loadCurrentData();
+                if (!currentData) return;
+            }
+
+            if (selectedCharts.length === 0) {
+                showAlert('Please select at least one chart to generate', 'error', 'charts-container');
+                return;
+            }
+
+            try {
+                showLoading('charts-container');
+                
+                const params = new URLSearchParams({
+                    data_mode: selectedDataMode,
+                    ...selectedCharts.reduce((acc, chart) => {
+                        acc[`charts`] = chart;
+                        return acc;
+                    }, {})
+                });
+                
+                // Add all selected charts as separate parameters
+                let url = '/api/charts/generate?' + 
+                    `data_mode=${selectedDataMode}&` + 
+                    selectedCharts.map(chart => `charts=${chart}`).join('&');
+                
+                // Add date range parameters if set
+                if (startDate) {
+                    url += `&start_date=${startDate}`;
+                }
+                if (endDate) {
+                    url += `&end_date=${endDate}`;
+                }
+                
+                const response = await fetch(url, {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayCharts(data.charts);
+                } else {
+                    document.getElementById('charts-container').innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+                }
+            } catch (error) {
+                console.error('Error generating charts:', error);
+                document.getElementById('charts-container').innerHTML = '<div class="alert alert-error">Error generating charts</div>';
+            }
+        }
+
+        function displayCharts(charts) {
+            if (!charts || charts.length === 0) {
+                document.getElementById('charts-container').innerHTML = '<div class="no-data"><h3>No Charts Generated</h3><p>Please select charts to display.</p></div>';
+                return;
+            }
+
+            const chartsHtml = charts.map(chart => `
+                <div class="chart-container">
+                    <h3>${chart.title}</h3>
+                    <img src="data:image/svg+xml;base64,${chart.image}" alt="${chart.title}" class="chart-image">
+                </div>
+            `).join('');
+
+            document.getElementById('charts-container').innerHTML = `
+                <div class="charts-grid">
+                    ${chartsHtml}
+                </div>
+            `;
+        }
+
+        // Utility functions
+        function showAlert(message, type, containerId) {
+            const container = document.getElementById(containerId);
+            const alertHtml = `<div class="alert alert-${type}">${message}</div>`;
+            container.innerHTML = alertHtml;
+            
+            setTimeout(() => {
+                if (container.innerHTML === alertHtml) {
+                    container.innerHTML = '';
+                }
+            }, 5000);
+        }
+
+        function showLoading(containerId) {
+            document.getElementById(containerId).innerHTML = '<div class="loading">📊 Generating charts...</div>';
+        }
+    </script>
+</body>
+</html>
