@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: ethiopian-airlines-dashboard
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 src.main:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
+    disk:
+      name: sales-data
+      mountPath: /opt/render/project/src/database
+      sizeGB: 1
+
