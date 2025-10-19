@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ethiopian Airlines - Sales Analytics</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         :root {
             /* Ethiopian Airlines Official Colors */
@@ -555,6 +556,15 @@
 
         .chart-image:hover {
             transform: scale(1.01);
+        }
+
+        /* Canvas for Chart.js */
+        .chart-canvas {
+            width: 100% !important;
+            height: 400px !important;
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
         }
 
         /* Dual chart layout */
@@ -1109,24 +1119,31 @@
                     chartContent = `
                         <div class="dual-chart-grid">
                             <div class="dual-chart-panel">
-                                <div class="dual-chart-label">💰 Revenue ($)</div>
-                                <img src="data:image/svg+xml;base64,${revenueData.image}" alt="${revenueData.title}" class="chart-image">
+                                <div class="dual-chart-label">💰 Revenue (KWD)</div>
+                                <canvas id="canvas-${chartInfo.id}-revenue" class="chart-canvas"></canvas>
                             </div>
                             <div class="dual-chart-panel">
                                 <div class="dual-chart-label">🎫 Tickets Count</div>
-                                <img src="data:image/svg+xml;base64,${ticketsData.image}" alt="${ticketsData.title}" class="chart-image">
+                                <canvas id="canvas-${chartInfo.id}-tickets" class="chart-canvas"></canvas>
                             </div>
                         </div>
                     `;
+                    // Render both charts
+                    setTimeout(() => {
+                        renderChartJS(chartInfo.id, 'revenue', revenueData);
+                        renderChartJS(chartInfo.id, 'tickets', ticketsData);
+                    }, 100);
                 }
             } else {
                 const chartData = await generateChart(chartInfo.id, config.dataMode);
                 if (chartData) {
                     chartContent = `
                         <div class="chart-wrapper">
-                            <img src="data:image/svg+xml;base64,${chartData.image}" alt="${chartData.title}" class="chart-image">
+                            <canvas id="canvas-${chartInfo.id}-${config.dataMode}" class="chart-canvas"></canvas>
                         </div>
                     `;
+                    // Render Chart.js chart after DOM update
+                    setTimeout(() => renderChartJS(chartInfo.id, config.dataMode, chartData), 100);
                 }
             }
             
@@ -1213,6 +1230,162 @@
                 }
             }, 5000);
         }
+
+        // Chart.js rendering function
+        const chartInstances = {};
+        
+        async function renderChartJS(chartId, dataMode, chartData) {
+            const canvasId = `canvas-${chartId}-${dataMode}`;
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) {
+                console.error(`Canvas not found: ${canvasId}`);
+                return;
+            }
+            
+            // Destroy existing chart if it exists
+            if (chartInstances[canvasId]) {
+                chartInstances[canvasId].destroy();
+            }
+            
+            // Fetch JSON data from new endpoint
+            const config = chartConfigs[chartId];
+            let url = `/api/charts/data/${chartId}?data_mode=${dataMode}`;
+            
+            if (chartId === 'by_report' && config.timeMode) {
+                url += `&time_mode=${config.timeMode}`;
+            }
+            
+            if (startDate) url += `&start_date=${startDate}`;
+            if (endDate) url += `&end_date=${endDate}`;
+            
+            try {
+                const response = await fetch(url, { credentials: 'include' });
+                const jsonData = await response.json();
+                
+                if (!jsonData.labels || jsonData.labels.length === 0) {
+                    console.warn(`No data for chart: ${chartId}`);
+                    return;
+                }
+                
+                // Ethiopian Airlines colors
+                const etGreen = '#5C8C4C';
+                const etYellow = '#FCCC2C';
+                const etRed = '#C4242B';
+                
+                // Determine chart type
+                const chartType = chartId === 'by_report' ? 'line' : 'bar';
+                
+                // Create gradient
+                const ctx = canvas.getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, dataMode === 'revenue' ? 'rgba(92, 140, 76, 0.8)' : 'rgba(252, 204, 44, 0.8)');
+                gradient.addColorStop(1, dataMode === 'revenue' ? 'rgba(92, 140, 76, 0.2)' : 'rgba(252, 204, 44, 0.2)');
+                
+                // Chart configuration
+                const chartConfig = {
+                    type: chartType,
+                    data: {
+                        labels: jsonData.labels,
+                        datasets: [{
+                            label: dataMode === 'revenue' ? 'Revenue (KWD)' : 'Tickets',
+                            data: jsonData.data,
+                            backgroundColor: chartType === 'bar' ? (dataMode === 'revenue' ? etGreen : etYellow) : gradient,
+                            borderColor: dataMode === 'revenue' ? etGreen : etYellow,
+                            borderWidth: chartType === 'line' ? 3 : 2,
+                            fill: chartType === 'line',
+                            tension: 0.4,
+                            pointRadius: chartType === 'line' ? 4 : 0,
+                            pointHoverRadius: chartType === 'line' ? 6 : 0,
+                            pointBackgroundColor: dataMode === 'revenue' ? etGreen : etYellow,
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    color: '#333',
+                                    font: { size: 14, weight: 'bold' },
+                                    padding: 15
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: etYellow,
+                                bodyColor: '#fff',
+                                borderColor: etGreen,
+                                borderWidth: 2,
+                                padding: 15,
+                                displayColors: true,
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) label += ': ';
+                                        if (context.parsed.y !== null) {
+                                            if (dataMode === 'revenue') {
+                                                label += new Intl.NumberFormat('en-US', {
+                                                    style: 'currency',
+                                                    currency: 'KWD',
+                                                    minimumFractionDigits: 2
+                                                }).format(context.parsed.y);
+                                            } else {
+                                                label += context.parsed.y.toLocaleString() + ' tickets';
+                                            }
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                                ticks: {
+                                    color: '#333',
+                                    font: { size: 12 },
+                                    callback: function(value) {
+                                        if (dataMode === 'revenue') {
+                                            return 'KWD ' + value.toLocaleString();
+                                        }
+                                        return value;
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: {
+                                    color: '#333',
+                                    font: { size: 12 },
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeInOutQuart'
+                        }
+                    }
+                };
+                
+                // Create chart
+                chartInstances[canvasId] = new Chart(ctx, chartConfig);
+                
+            } catch (error) {
+                console.error(`Error rendering Chart.js for ${chartId}:`, error);
+            }
+        }
+
     </script>
 </body>
 </html>
