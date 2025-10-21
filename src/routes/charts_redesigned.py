@@ -428,13 +428,6 @@ def get_chart_options():
 @charts_bp.route('/charts/data/<chart_id>')
 def get_chart_data_json(chart_id):
     """Get chart data as JSON for Chart.js (keeps SVG endpoints working too)"""
-    # Check if user is authenticated (either admin or public)
-    is_admin = session.get('admin_logged_in', False)
-    is_public = session.get('public_authenticated', False)
-    
-    if not is_admin and not is_public:
-        return jsonify({'error': 'Authentication required', 'labels': [], 'data': []}), 401
-    
     try:
         # Get parameters
         data_mode = request.args.get('data_mode', 'revenue')
