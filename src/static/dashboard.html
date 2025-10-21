@@ -477,12 +477,45 @@
             flex-wrap: wrap;
         }
         
+        /* Back to home button */
+        .back-home-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--et-green), var(--et-dark-green));
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .back-home-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(92, 140, 76, 0.5);
+            background: linear-gradient(135deg, var(--et-light-green), var(--et-green));
+        }
+        
+        .back-home-btn:active {
+            transform: translateY(0);
+        }
+
         /* Chart total display */
         .chart-total {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            gap: 20px;
+            flex-wrap: wrap;
             padding: 20px;
             margin: 20px 0;
             background: linear-gradient(135deg, rgba(92, 140, 76, 0.15), rgba(252, 204, 44, 0.1));
@@ -782,6 +815,12 @@
     </style>
 </head>
 <body>
+    <!-- Back to Home Button -->
+    <a href="/" class="back-home-btn">
+        <span>🏠</span>
+        <span>Back to Home</span>
+    </a>
+    
     <div class="container">
         <!-- Header -->
         <div class="header">
@@ -1426,23 +1465,40 @@
                 // Create chart
                 chartInstances[canvasId] = new Chart(ctx, chartConfig);
                 
-                // Display total
-                displayChartTotal(chartId, dataMode, jsonData.total);
+                // Display both totals
+                if (jsonData.total_revenue !== undefined) {
+                    displayChartTotal(chartId, dataMode, jsonData.total_revenue, 'revenue');
+                }
+                if (jsonData.total_tickets !== undefined) {
+                    displayChartTotal(chartId, dataMode, jsonData.total_tickets, 'tickets');
+                }
                 
             } catch (error) {
                 console.error(`Error rendering Chart.js for ${chartId}:`, error);
             }
         }
         
-        function displayChartTotal(chartId, dataMode, total) {
+        function displayChartTotal(chartId, dataMode, total, totalType) {
             const totalElement = document.getElementById(`total-${chartId}-${dataMode}`);
             if (!totalElement) return;
             
+            // Store the total for this totalType (revenue or tickets)
+            if (!totalElement.dataset.totals) {
+                totalElement.dataset.totals = '{}';
+            }
+            
+            const totals = JSON.parse(totalElement.dataset.totals);
+            totals[totalType] = total;
+            totalElement.dataset.totals = JSON.stringify(totals);
+            
+            // Display both totals if available
             let displayText = '';
-            if (dataMode === 'revenue') {
-                displayText = `<div class="total-label">Total Revenue:</div><div class="total-value">KWD ${total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>`;
-            } else {
-                displayText = `<div class="total-label">Total Tickets:</div><div class="total-value">${Math.round(total).toLocaleString()}</div>`;
+            if (totals.revenue !== undefined) {
+                displayText += `<div style="display: flex; align-items: center; gap: 10px;"><div class="total-label">Total Revenue:</div><div class="total-value">KWD ${totals.revenue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div></div>`;
+            }
+            if (totals.tickets !== undefined) {
+                if (displayText) displayText += '<div style="width: 2px; height: 30px; background: rgba(255,255,255,0.2);"></div>';
+                displayText += `<div style="display: flex; align-items: center; gap: 10px;"><div class="total-label">Total Tickets:</div><div class="total-value">${Math.round(totals.tickets).toLocaleString()}</div></div>`;
             }
             
             totalElement.innerHTML = displayText;
