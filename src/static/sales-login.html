@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Report - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --et-green: #5C8C4C;
+            --et-yellow: #FCCC2C;
+            --et-red: #C4242B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a2f1a 0%, #2d4a2d 50%, #1f3520 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            max-width: 450px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 50px 40px;
+            border: 2px solid rgba(92, 140, 76, 0.2);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.8s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--et-green), var(--et-yellow), var(--et-red));
+        }
+
+        .logo-stripes {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 30px;
+        }
+
+        .logo-stripe {
+            width: 6px;
+            height: 60px;
+            border-radius: 3px;
+        }
+
+        .stripe-green { background: linear-gradient(180deg, var(--et-green), #3a5a2f); }
+        .stripe-yellow { background: linear-gradient(180deg, var(--et-yellow), #d9b324); }
+        .stripe-red { background: linear-gradient(180deg, var(--et-red), #9a1c22); }
+
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--et-green), var(--et-yellow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 40px;
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.95rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid rgba(92, 140, 76, 0.3);
+            border-radius: 12px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--et-green);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 20px rgba(92, 140, 76, 0.3);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--et-green), #7ba66b);
+            color: white;
+            box-shadow: 0 4px 15px rgba(92, 140, 76, 0.4);
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(92, 140, 76, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .alert {
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+            font-size: 0.9rem;
+        }
+
+        .alert-error {
+            background: rgba(196, 36, 43, 0.15);
+            border-color: var(--et-red);
+            color: #ff6b6b;
+        }
+
+        .alert-success {
+            background: rgba(92, 140, 76, 0.15);
+            border-color: var(--et-green);
+            color: #7ba66b;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .back-link a {
+            color: var(--et-yellow);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .back-link a:hover {
+            color: var(--et-green);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-stripes">
+            <div class="logo-stripe stripe-green"></div>
+            <div class="logo-stripe stripe-yellow"></div>
+            <div class="logo-stripe stripe-red"></div>
+        </div>
+        
+        <h1>Sales Report</h1>
+        <p class="subtitle">Enter password to access analytics</p>
+
+        <div id="alert-container"></div>
+
+        <form id="login-form" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    class="form-input" 
+                    placeholder="Enter access password"
+                    required
+                    autocomplete="off"
+                >
+            </div>
+
+            <button type="submit" class="btn">Access Dashboard</button>
+        </form>
+
+        <div class="back-link">
+            <a href="/">← Back to Home</a>
+        </div>
+    </div>
+
+    <script>
+        // Check if already authenticated
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/public/status', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    window.location.href = '/dashboard';
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+            }
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const password = document.getElementById('password').value;
+            const alertContainer = document.getElementById('alert-container');
+            
+            try {
+                const response = await fetch('/api/public/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password }),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    alertContainer.innerHTML = '<div class="alert alert-success">Access granted! Redirecting...</div>';
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1000);
+                } else {
+                    alertContainer.innerHTML = '<div class="alert alert-error">Invalid password. Please try again.</div>';
+                    document.getElementById('password').value = '';
+                    document.getElementById('password').focus();
+                }
+            } catch (error) {
+                alertContainer.innerHTML = '<div class="alert alert-error">Connection error. Please try again.</div>';
+            }
+        }
+
+        // Check auth on page load
+        checkAuth();
+    </script>
+</body>
+</html>
+
