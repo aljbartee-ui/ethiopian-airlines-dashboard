@@ -461,14 +461,21 @@ def get_chart_data_json(chart_id):
         labels = list(chart_data.keys())
         values = list(chart_data.values())
         
-        # Calculate total
+        # Calculate total for current data_mode
         total = sum(values)
+        
+        # Also calculate total for the other data_mode
+        other_mode = 'tickets' if data_mode == 'revenue' else 'revenue'
+        other_chart_data = process_chart_data(data, chart_id, other_mode, time_mode, start_date, end_date)
+        other_total = sum(other_chart_data.values()) if other_chart_data else 0
         
         return jsonify({
             'success': True,
             'labels': labels,
             'data': values,
             'total': total,
+            'total_revenue': total if data_mode == 'revenue' else other_total,
+            'total_tickets': total if data_mode == 'tickets' else other_total,
             'data_mode': data_mode,
             'time_mode': time_mode if chart_id == 'by_report' else None,
             'chart_id': chart_id
