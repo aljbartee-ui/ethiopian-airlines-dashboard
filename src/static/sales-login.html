@@ -222,25 +222,61 @@
     </div>
 
     <script>
-        // Simplified: Direct access without password authentication
-        // Password protection temporarily disabled for deployment stability
-        
+        // Check if already authenticated
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/public/status', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    window.location.href = '/dashboard';
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+            }
+        }
+
         async function handleLogin(event) {
             event.preventDefault();
             
+            const password = document.getElementById('password').value;
             const alertContainer = document.getElementById('alert-container');
             
-            // Show success message and redirect
-            alertContainer.innerHTML = '<div class="alert alert-success">Access granted! Redirecting...</div>';
-            setTimeout(() => {
-                window.location.href = '/dashboard';
-            }, 500);
+            if (!password) {
+                alertContainer.innerHTML = '<div class="alert alert-error">Please enter a password.</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/public/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password }),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    alertContainer.innerHTML = '<div class="alert alert-success">Access granted! Redirecting...</div>';
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1000);
+                } else {
+                    alertContainer.innerHTML = '<div class="alert alert-error">Invalid password. Please try again.</div>';
+                    document.getElementById('password').value = '';
+                    document.getElementById('password').focus();
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alertContainer.innerHTML = '<div class="alert alert-error">Connection error. Please try again.</div>';
+            }
         }
 
-        // Auto-redirect after 2 seconds if user doesn't click
-        setTimeout(() => {
-            window.location.href = '/dashboard';
-        }, 2000);
+        // Check auth on page load
+        checkAuth();
     </script>
 </body>
 </html>
