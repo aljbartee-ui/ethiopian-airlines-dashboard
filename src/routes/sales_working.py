@@ -13,8 +13,8 @@ sales_bp = Blueprint('sales', __name__)
 def process_excel_file(file_content, filename):
     """Process Excel file and extract data"""
     try:
-        # Load workbook from bytes
-        workbook = openpyxl.load_workbook(BytesIO(file_content))
+        # Load workbook from bytes with data_only=True to read formula values
+        workbook = openpyxl.load_workbook(BytesIO(file_content), data_only=True)
         
         processed_data = {}
         
