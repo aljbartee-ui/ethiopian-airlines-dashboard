@@ -164,6 +164,20 @@ def safe_float(value):
     except (ValueError, TypeError):
         return 0.0
 
+def get_revenue_value(row):
+    """Get revenue value from row, trying INCOME first, then Amount"""
+    # Try INCOME column first
+    income = row.get('INCOME')
+    if income is not None and income != '':
+        return safe_float(income)
+    
+    # Fall back to Amount column
+    amount = row.get('Amount')
+    if amount is not None and amount != '':
+        return safe_float(amount)
+    
+    return 0.0
+
 def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily', start_date=None, end_date=None):
     """Process sales data for specific chart type"""
     try:
@@ -217,7 +231,7 @@ def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily',
                             key = date_str
                         
                         if data_mode == 'revenue':
-                            value = safe_float(row.get('INCOME', 0))
+                            value = get_revenue_value(row)
                         else:  # tickets
                             value = 1
                         time_data[key] += value
@@ -233,7 +247,7 @@ def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily',
             for row in filtered_data:
                 agent = row.get('Issuing agent', 'Unknown')
                 if data_mode == 'revenue':
-                    value = safe_float(row.get('INCOME', 0))
+                    value = get_revenue_value(row)
                 else:  # tickets
                     value = 1
                 agent_data[agent] += value
@@ -261,7 +275,7 @@ def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily',
                         day_name = date_obj.strftime('%A')
                         
                         if data_mode == 'revenue':
-                            value = safe_float(row.get('INCOME', 0))
+                            value = get_revenue_value(row)
                         else:  # tickets
                             value = 1
                         days_data[day_name] += value
@@ -311,7 +325,7 @@ def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily',
                 # Add to hourly data if we successfully extracted an hour
                 if hour_int is not None and 0 <= hour_int <= 23:
                     if data_mode == 'revenue':
-                        value = safe_float(row.get('INCOME', 0))
+                        value = get_revenue_value(row)
                     else:  # tickets
                         value = 1
                     hourly_data[f"{hour_int:02d}:00"] += value
