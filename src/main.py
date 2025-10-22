@@ -3,7 +3,7 @@ import sys
 # DON'T CHANGE THIS !!!
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, session, request, jsonify
 from src.models.user import db
 from src.models.sales import SalesData, AdminUser
 from src.routes.user import user_bp
@@ -50,6 +50,34 @@ def dashboard():
     if static_folder_path is None:
         return "Static folder not configured", 404
     return send_from_directory(static_folder_path, 'dashboard.html')
+
+# Public authentication endpoints
+@app.route('/api/public/login', methods=['POST'])
+def public_login():
+    """Simple password authentication for public viewers"""
+    data = request.get_json()
+    password = data.get('password', '')
+    
+    # Simple password check (you can change this password)
+    PUBLIC_PASSWORD = os.environ.get('PUBLIC_PASSWORD', 'ethiopian2025')
+    
+    if password == PUBLIC_PASSWORD:
+        session['public_authenticated'] = True
+        return jsonify({'success': True, 'message': 'Authentication successful'})
+    else:
+        return jsonify({'success': False, 'message': 'Invalid password'}), 401
+
+@app.route('/api/public/status')
+def public_status():
+    """Check if user is authenticated"""
+    is_authenticated = session.get('public_authenticated', False) or session.get('admin_logged_in', False)
+    return jsonify({'authenticated': is_authenticated})
+
+@app.route('/api/public/logout', methods=['POST'])
+def public_logout():
+    """Logout public user"""
+    session.pop('public_authenticated', None)
+    return jsonify({'success': True})
 
 @app.route('/<path:path>')
 def serve(path):
