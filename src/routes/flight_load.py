@@ -247,4 +247,3 @@ def get_flight_load_summary():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
