@@ -8,6 +8,38 @@ from collections import defaultdict
 
 flight_load_bp = Blueprint('flight_load', __name__)
 
+def safe_int(value):
+    """Safely convert value to int, handling non-numeric values"""
+    if value is None or value == '':
+        return 0
+    if isinstance(value, (int, float)):
+        return int(value)
+    if isinstance(value, str):
+        # Handle special values like 'X', 'N/A', etc.
+        if value.strip().upper() in ['X', 'N/A', 'NA', '-', '']:
+            return 0
+        try:
+            return int(float(value))
+        except (ValueError, TypeError):
+            return 0
+    return 0
+
+def safe_float(value):
+    """Safely convert value to float, handling non-numeric values"""
+    if value is None or value == '':
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        # Handle special values like 'X', 'N/A', etc.
+        if value.strip().upper() in ['X', 'N/A', 'NA', '-', '']:
+            return 0.0
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return 0.0
+    return 0.0
+
 def process_flight_load_excel(file_content, filename):
     """Process Flight Load Excel file and extract LF 620-621 data"""
     try:
@@ -29,18 +61,18 @@ def process_flight_load_excel(file_content, filename):
         for row in sheet.iter_rows(min_row=2, values_only=True):
             if row[0]:  # If flight number exists
                 inbound_record = {
-                    'flight_no': row[0],
+                    'flight_no': str(row[0]),
                     'travel_date': row[1].strftime('%Y-%m-%d') if isinstance(row[1], datetime) else str(row[1]),
-                    'day': row[2],
-                    'c_cap': row[3] or 0,  # Business capacity
-                    'y_cap': row[4] or 0,  # Economy capacity
-                    'tot_cap': row[5] or 0,  # Total capacity
-                    'pax_c': row[6] or 0,  # Business passengers
-                    'pax_y': row[7] or 0,  # Economy passengers
-                    'pax': row[8] or 0,  # Total passengers
-                    'lf_c': float(row[9]) if row[9] else 0,  # Business load factor
-                    'lf_y': float(row[10]) if row[10] else 0,  # Economy load factor
-                    'lf': float(row[11]) if row[11] else 0  # Total load factor
+                    'day': str(row[2]) if row[2] else '',
+                    'c_cap': safe_int(row[3]),  # Business capacity
+                    'y_cap': safe_int(row[4]),  # Economy capacity
+                    'tot_cap': safe_int(row[5]),  # Total capacity
+                    'pax_c': safe_int(row[6]),  # Business passengers
+                    'pax_y': safe_int(row[7]),  # Economy passengers
+                    'pax': safe_int(row[8]),  # Total passengers
+                    'lf_c': safe_float(row[9]),  # Business load factor
+                    'lf_y': safe_float(row[10]),  # Economy load factor
+                    'lf': safe_float(row[11])  # Total load factor
                 }
                 processed_data['inbound'].append(inbound_record)
         
@@ -48,18 +80,18 @@ def process_flight_load_excel(file_content, filename):
         for row in sheet.iter_rows(min_row=2, values_only=True):
             if len(row) > 14 and row[14]:  # If outbound flight number exists
                 outbound_record = {
-                    'flight_no': row[14],
+                    'flight_no': str(row[14]),
                     'travel_date': row[15].strftime('%Y-%m-%d') if isinstance(row[15], datetime) else str(row[15]),
-                    'day': row[16],
-                    'c_cap': row[17] or 0,
-                    'y_cap': row[18] or 0,
-                    'tot_cap': row[19] or 0,
-                    'pax_c': row[20] or 0,
-                    'pax_y': row[21] or 0,
-                    'pax': row[22] or 0,
-                    'lf_c': float(row[23]) if row[23] else 0,
-                    'lf_y': float(row[24]) if row[24] else 0,
-                    'lf': float(row[25]) if row[25] else 0
+                    'day': str(row[16]) if row[16] else '',
+                    'c_cap': safe_int(row[17]),
+                    'y_cap': safe_int(row[18]),
+                    'tot_cap': safe_int(row[19]),
+                    'pax_c': safe_int(row[20]),
+                    'pax_y': safe_int(row[21]),
+                    'pax': safe_int(row[22]),
+                    'lf_c': safe_float(row[23]),
+                    'lf_y': safe_float(row[24]),
+                    'lf': safe_float(row[25])
                 }
                 processed_data['outbound'].append(outbound_record)
         
