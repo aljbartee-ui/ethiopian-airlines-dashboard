@@ -244,6 +244,141 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Admin Section */
+        .admin-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 2px solid rgba(252, 204, 44, 0.3);
+        }
+
+        .admin-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--et-yellow);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-login, .admin-upload {
+            display: grid;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-group input {
+            padding: 12px;
+            border: 2px solid rgba(92, 140, 76, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 14px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--et-green);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .upload-zone {
+            border: 2px dashed rgba(92, 140, 76, 0.5);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .upload-zone:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--et-green);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 8px;
+        }
+
+        .upload-subtext {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .btn-admin {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--et-green), var(--et-light-green));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-admin:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(92, 140, 76, 0.4);
+        }
+
+        .btn-admin:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-logout {
+            background: linear-gradient(135deg, var(--et-red), #a01d23);
+        }
+
+        .btn-logout:hover {
+            box-shadow: 0 4px 15px rgba(196, 36, 43, 0.4);
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .message.success {
+            background: rgba(92, 140, 76, 0.2);
+            border: 1px solid var(--et-green);
+            color: white;
+        }
+
+        .message.error {
+            background: rgba(196, 36, 43, 0.2);
+            border: 1px solid var(--et-red);
+            color: white;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .charts-grid {
@@ -267,6 +402,43 @@
         <div class="header">
             <h1>✈️ Flight Load Analytics</h1>
             <p>Monitor flight capacity, load factors, and passenger trends</p>
+        </div>
+
+        <!-- Admin Section -->
+        <div class="admin-section">
+            <div class="admin-title">🔐 Admin Panel</div>
+            
+            <!-- Admin Login Form -->
+            <div id="admin-login-form" class="admin-login">
+                <div class="form-group">
+                    <label for="admin-username">Username</label>
+                    <input type="text" id="admin-username" placeholder="Enter admin username">
+                </div>
+                <div class="form-group">
+                    <label for="admin-password">Password</label>
+                    <input type="password" id="admin-password" placeholder="Enter admin password">
+                </div>
+                <button class="btn-admin" onclick="adminLogin()">Login as Admin</button>
+                <div id="login-message" class="message hidden"></div>
+            </div>
+
+            <!-- Admin Upload Section (hidden until logged in) -->
+            <div id="admin-upload-section" class="admin-upload hidden">
+                <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 15px;">Upload Excel file with "LF 620-621" sheet containing flight load data.</p>
+                
+                <div class="upload-zone" onclick="document.getElementById('flight-file-input').click()">
+                    <div class="upload-icon">✈️</div>
+                    <div class="upload-text">Upload Flight Load Data</div>
+                    <div class="upload-subtext">Click to select Excel file (.xlsx, .xls) - Must contain "LF 620-621" sheet</div>
+                </div>
+                <input type="file" id="flight-file-input" accept=".xlsx,.xls" style="display: none;" onchange="handleFileSelect(event)">
+                
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button class="btn-admin btn-logout" onclick="adminLogout()">Logout</button>
+                </div>
+                
+                <div id="upload-message" class="message hidden"></div>
+            </div>
         </div>
 
         <!-- Filters -->
@@ -314,8 +486,128 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
+            checkAdminStatus();
             loadFlightData();
         });
+
+        // Admin Functions
+        async function checkAdminStatus() {
+            try {
+                const response = await fetch('/api/admin/status', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.logged_in) {
+                    showAdminUpload();
+                }
+            } catch (error) {
+                console.error('Error checking admin status:', error);
+            }
+        }
+
+        async function adminLogin() {
+            const username = document.getElementById('admin-username').value;
+            const password = document.getElementById('admin-password').value;
+            const messageDiv = document.getElementById('login-message');
+            
+            if (!username || !password) {
+                showMessage(messageDiv, 'Please enter username and password', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage(messageDiv, 'Login successful!', 'success');
+                    setTimeout(() => {
+                        showAdminUpload();
+                    }, 500);
+                } else {
+                    showMessage(messageDiv, data.error || 'Invalid credentials', 'error');
+                }
+            } catch (error) {
+                showMessage(messageDiv, 'Connection error. Please try again.', 'error');
+            }
+        }
+
+        async function adminLogout() {
+            try {
+                await fetch('/api/admin/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                document.getElementById('admin-login-form').classList.remove('hidden');
+                document.getElementById('admin-upload-section').classList.add('hidden');
+                document.getElementById('admin-username').value = '';
+                document.getElementById('admin-password').value = '';
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        function showAdminUpload() {
+            document.getElementById('admin-login-form').classList.add('hidden');
+            document.getElementById('admin-upload-section').classList.remove('hidden');
+        }
+
+        function showMessage(element, text, type) {
+            element.textContent = text;
+            element.className = `message ${type}`;
+            element.classList.remove('hidden');
+            
+            setTimeout(() => {
+                element.classList.add('hidden');
+            }, 5000);
+        }
+
+        async function handleFileSelect(event) {
+            const file = event.target.files[0];
+            const messageDiv = document.getElementById('upload-message');
+            
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                showMessage(messageDiv, 'Uploading...', 'success');
+                
+                const response = await fetch('/api/flight-load/upload', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage(messageDiv, `✅ Upload successful! Inbound: ${data.inbound_records}, Outbound: ${data.outbound_records}`, 'success');
+                    // Reload data
+                    setTimeout(() => {
+                        loadFlightData();
+                    }, 1000);
+                } else {
+                    showMessage(messageDiv, `❌ ${data.error || 'Upload failed'}`, 'error');
+                }
+            } catch (error) {
+                showMessage(messageDiv, '❌ Connection error. Please try again.', 'error');
+            }
+            
+            // Reset file input
+            event.target.value = '';
+        }
 
         async function loadFlightData() {
             try {
