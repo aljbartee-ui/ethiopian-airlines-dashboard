@@ -61,6 +61,14 @@ def flight_load():
         return "Static folder not configured", 404
     return send_from_directory(static_folder_path, 'flight-load.html')
 
+@app.route('/admin')
+def admin_panel():
+    """Serve the admin panel"""
+    static_folder_path = app.static_folder
+    if static_folder_path is None:
+        return "Static folder not configured", 404
+    return send_from_directory(static_folder_path, 'admin.html')
+
 # Public authentication endpoints
 @app.route('/api/public/login', methods=['POST'])
 def public_login():
