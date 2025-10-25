@@ -48,6 +48,28 @@ def sales_report():
 @app.route('/dashboard')
 def dashboard():
     """Serve the dashboard (requires authentication)"""
+    from datetime import datetime, timedelta
+    
+    # Check if user is authenticated
+    is_admin = session.get('admin_logged_in', False)
+    is_public = session.get('public_authenticated', False)
+    
+    # Check session timeout (1 hour)
+    last_activity = session.get('last_activity')
+    if last_activity:
+        last_activity_time = datetime.fromisoformat(last_activity)
+        if datetime.now() - last_activity_time > timedelta(hours=1):
+            # Session expired
+            session.clear()
+            return send_from_directory(app.static_folder, 'sales-login.html')
+    
+    # If not authenticated, redirect to login
+    if not is_admin and not is_public:
+        return send_from_directory(app.static_folder, 'sales-login.html')
+    
+    # Update last activity time
+    session['last_activity'] = datetime.now().isoformat()
+    
     static_folder_path = app.static_folder
     if static_folder_path is None:
         return "Static folder not configured", 404
@@ -73,6 +95,8 @@ def admin_panel():
 @app.route('/api/public/login', methods=['POST'])
 def public_login():
     """Simple password authentication for public viewers"""
+    from datetime import datetime
+    
     data = request.get_json()
     password = data.get('password', '')
     
@@ -81,6 +105,7 @@ def public_login():
     
     if password == PUBLIC_PASSWORD:
         session['public_authenticated'] = True
+        session['last_activity'] = datetime.now().isoformat()
         return jsonify({'success': True, 'message': 'Authentication successful'})
     else:
         return jsonify({'success': False, 'message': 'Invalid password'}), 401
