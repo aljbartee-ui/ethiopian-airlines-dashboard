@@ -746,12 +746,16 @@
                 </div>
             `;
             
-            // Render each chart
-            renderLFTrendChart();
-            renderComparisonChart();
-            renderClassChart();
-            renderDayChart();
-            renderPaxChart();
+            // Render each chart after DOM update
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    renderLFTrendChart();
+                    renderComparisonChart();
+                    renderClassChart();
+                    renderDayChart();
+                    renderPaxChart();
+                });
+            });
         }
 
         function renderLFTrendChart() {
