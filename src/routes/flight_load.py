@@ -46,11 +46,13 @@ def process_flight_load_excel(file_content, filename):
         # Load workbook with data_only=True to read formula values
         workbook = openpyxl.load_workbook(BytesIO(file_content), data_only=True)
         
-        # Get the LF 620-621 sheet
-        if 'LF 620-621' not in workbook.sheetnames:
-            raise ValueError("Sheet 'LF 620-621' not found in Excel file")
+        # Get the first sheet (should be LF 620-621)
+        if not workbook.sheetnames:
+            raise ValueError("No sheets found in Excel file")
         
-        sheet = workbook['LF 620-621']
+        # Use first sheet
+        sheet = workbook[workbook.sheetnames[0]]
+        print(f"Processing sheet: {workbook.sheetnames[0]}")
         
         processed_data = {
             'inbound': [],  # Flight 620: ADD to KWI
