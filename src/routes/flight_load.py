@@ -136,9 +136,9 @@ def upload_flight_load():
         # Create new flight load data entry
         new_data = SalesData(
             filename='FLIGHT_LOAD_DATA',
-            data=processed_data,
             is_active=True
         )
+        new_data.set_data(processed_data)
         
         db.session.add(new_data)
         db.session.commit()
