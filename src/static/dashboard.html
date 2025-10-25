@@ -1315,14 +1315,45 @@
             }, 5000);
         }
 
+        // Check if Chart.js is loaded
+        function isChartJsLoaded() {
+            return typeof Chart !== 'undefined';
+        }
+        
+        // Wait for Chart.js to load
+        async function waitForChartJs(maxWait = 5000) {
+            const startTime = Date.now();
+            while (!isChartJsLoaded()) {
+                if (Date.now() - startTime > maxWait) {
+                    throw new Error('Chart.js failed to load');
+                }
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+        
         // Chart.js rendering function
         const chartInstances = {};
         
         async function renderChartJS(chartId, dataMode, chartData) {
-            const canvasId = `canvas-${chartId}-${dataMode}`;
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) {
-                console.error(`Canvas not found: ${canvasId}`);
+            try {
+                // Wait for Chart.js to load
+                await waitForChartJs();
+                
+                const canvasId = `canvas-${chartId}-${dataMode}`;
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) {
+                    console.error(`Canvas not found: ${canvasId}`);
+                    return;
+                }
+                
+                console.log(`Rendering chart: ${chartId}, mode: ${dataMode}`);
+            } catch (error) {
+                console.error('Chart.js loading error:', error);
+                // Show error message to user
+                const container = document.querySelector(`#chart-${chartId}`);
+                if (container) {
+                    container.innerHTML = '<div style="color: red; padding: 20px; text-align: center;">⚠️ Error loading charts. Please refresh the page.</div>';
+                }
                 return;
             }
             
