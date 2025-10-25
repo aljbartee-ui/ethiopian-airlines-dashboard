@@ -727,14 +727,14 @@
                 <div class="chart-card">
                     <div class="chart-title">Class Performance</div>
                     <div class="chart-container">
-                        <canvas id="chart-class"></canvas>
+                        <canvas id="chart-class-performance"></canvas>
                     </div>
                 </div>
                 
                 <div class="chart-card">
                     <div class="chart-title">Load Factor by Day of Week</div>
                     <div class="chart-container">
-                        <canvas id="chart-day"></canvas>
+                        <canvas id="chart-day-of-week"></canvas>
                     </div>
                 </div>
                 
@@ -759,12 +759,20 @@
         }
 
         function renderLFTrendChart() {
-            // Destroy existing chart if it exists
+            const canvas = document.getElementById('chart-lf-trend');
+            
+            // Destroy ANY existing chart on this canvas (Chart.js global registry)
+            const existingChart = Chart.getChart(canvas);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            
+            // Also destroy from our local charts object
             if (charts.lfTrend) {
                 charts.lfTrend.destroy();
             }
             
-            const ctx = document.getElementById('chart-lf-trend').getContext('2d');
+            const ctx = canvas.getContext('2d');
             
             const inbound = flightData.inbound.map(r => ({
                 x: r.travel_date,
@@ -837,12 +845,18 @@
         }
 
         function renderComparisonChart() {
-            // Destroy existing chart if it exists
+            const canvas = document.getElementById('chart-comparison');
+            
+            const existingChart = Chart.getChart(canvas);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            
             if (charts.comparison) {
                 charts.comparison.destroy();
             }
             
-            const ctx = document.getElementById('chart-comparison').getContext('2d');
+            const ctx = canvas.getContext('2d');
             
             const inboundAvg = flightData.inbound.reduce((sum, r) => sum + r.lf, 0) / flightData.inbound.length * 100;
             const outboundAvg = flightData.outbound.reduce((sum, r) => sum + r.lf, 0) / flightData.outbound.length * 100;
@@ -892,12 +906,18 @@
         }
 
         function renderClassChart() {
-            // Destroy existing chart if it exists
+            const canvas = document.getElementById('chart-class-performance');
+            
+            const existingChart = Chart.getChart(canvas);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            
             if (charts.classPerformance) {
                 charts.classPerformance.destroy();
             }
             
-            const ctx = document.getElementById('chart-class-performance').getContext('2d'); 
+            const ctx = canvas.getContext('2d'); 
             const allFlights = [...flightData.inbound, ...flightData.outbound];
             const businessAvg = allFlights.reduce((sum, r) => sum + r.lf_c, 0) / allFlights.length * 100;
             const economyAvg = allFlights.reduce((sum, r) => sum + r.lf_y, 0) / allFlights.length * 100;
@@ -931,12 +951,18 @@
         }
 
         function renderDayChart() {
-            // Destroy existing chart if it exists
+            const canvas = document.getElementById('chart-day-of-week');
+            
+            const existingChart = Chart.getChart(canvas);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            
             if (charts.dayOfWeek) {
                 charts.dayOfWeek.destroy();
             }
             
-            const ctx = document.getElementById('chart-day-of-week').getContext('2d');         
+            const ctx = canvas.getContext('2d');         
             const dayData = {};
             const allFlights = [...flightData.inbound, ...flightData.outbound];
             
@@ -1000,12 +1026,18 @@
         }
 
         function renderPaxChart() {
-            // Destroy existing chart if it exists
+            const canvas = document.getElementById('chart-pax');
+            
+            const existingChart = Chart.getChart(canvas);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            
             if (charts.paxDistribution) {
                 charts.paxDistribution.destroy();
             }
             
-            const ctx = document.getElementById('chart-pax').getContext('2d');
+            const ctx = canvas.getContext('2d');
             
             const inboundPax = flightData.inbound.reduce((sum, r) => sum + r.pax, 0);
             const outboundPax = flightData.outbound.reduce((sum, r) => sum + r.pax, 0);
