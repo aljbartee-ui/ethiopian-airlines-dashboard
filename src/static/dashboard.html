@@ -1209,13 +1209,11 @@
                             </div>
                         </div>
                     `;
-                    // Render both charts after DOM is ready
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            renderChartJS(chartInfo.id, 'revenue', revenueData);
-                            renderChartJS(chartInfo.id, 'tickets', ticketsData);
-                        });
-                    });
+                    // Render both charts
+                    setTimeout(() => {
+                        renderChartJS(chartInfo.id, 'revenue', revenueData);
+                        renderChartJS(chartInfo.id, 'tickets', ticketsData);
+                    }, 100);
                 }
             } else {
                 const chartData = await generateChart(chartInfo.id, config.dataMode);
@@ -1226,12 +1224,7 @@
                         </div>
                     `;
                     // Render Chart.js chart after DOM update
-                    // Use requestAnimationFrame to ensure DOM is ready
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            renderChartJS(chartInfo.id, config.dataMode, chartData);
-                        });
-                    });
+                    setTimeout(() => renderChartJS(chartInfo.id, config.dataMode, chartData), 100);
                 }
             }
             
@@ -1347,26 +1340,9 @@
                 await waitForChartJs();
                 
                 const canvasId = `canvas-${chartId}-${dataMode}`;
-                
-                // Wait for canvas to exist in DOM (with retry)
-                let canvas = document.getElementById(canvasId);
-                let retries = 0;
-                while (!canvas && retries < 20) {
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                    canvas = document.getElementById(canvasId);
-                    retries++;
-                }
-                
+                const canvas = document.getElementById(canvasId);
                 if (!canvas) {
-                    console.error(`Canvas not found after ${retries} retries: ${canvasId}`);
-                    // Show error in the chart container
-                    const chartContainer = document.querySelector(`#chart-${chartId}`);
-                    if (chartContainer) {
-                        const totalDiv = chartContainer.querySelector('.chart-total');
-                        if (totalDiv) {
-                            totalDiv.innerHTML = '<div style="color: #C4242B; padding: 10px;">⚠️ Chart failed to load. Please refresh.</div>';
-                        }
-                    }
+                    console.error(`Canvas not found: ${canvasId}`);
                     return;
                 }
                 
