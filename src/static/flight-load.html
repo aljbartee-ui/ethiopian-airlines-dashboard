@@ -759,6 +759,11 @@
         }
 
         function renderLFTrendChart() {
+            // Destroy existing chart if it exists
+            if (charts.lfTrend) {
+                charts.lfTrend.destroy();
+            }
+            
             const ctx = document.getElementById('chart-lf-trend').getContext('2d');
             
             const inbound = flightData.inbound.map(r => ({
@@ -832,6 +837,11 @@
         }
 
         function renderComparisonChart() {
+            // Destroy existing chart if it exists
+            if (charts.comparison) {
+                charts.comparison.destroy();
+            }
+            
             const ctx = document.getElementById('chart-comparison').getContext('2d');
             
             const inboundAvg = flightData.inbound.reduce((sum, r) => sum + r.lf, 0) / flightData.inbound.length * 100;
@@ -882,8 +892,12 @@
         }
 
         function renderClassChart() {
-            const ctx = document.getElementById('chart-class').getContext('2d');
+            // Destroy existing chart if it exists
+            if (charts.classPerformance) {
+                charts.classPerformance.destroy();
+            }
             
+            const ctx = document.getElementById('chart-class-performance').getContext('2d'); 
             const allFlights = [...flightData.inbound, ...flightData.outbound];
             const businessAvg = allFlights.reduce((sum, r) => sum + r.lf_c, 0) / allFlights.length * 100;
             const economyAvg = allFlights.reduce((sum, r) => sum + r.lf_y, 0) / allFlights.length * 100;
@@ -914,11 +928,13 @@
                     }
                 }
             });
-        }
-
-        function renderDayChart() {
-            const ctx = document.getElementById('chart-day').getContext('2d');
+               function renderDayChart() {
+            // Destroy existing chart if it exists
+            if (charts.dayOfWeek) {
+                charts.dayOfWeek.destroy();
+            }
             
+            const ctx = document.getElementById('chart-day-of-week').getContext('2d');         
             const dayData = {};
             const allFlights = [...flightData.inbound, ...flightData.outbound];
             
@@ -982,6 +998,11 @@
         }
 
         function renderPaxChart() {
+            // Destroy existing chart if it exists
+            if (charts.paxDistribution) {
+                charts.paxDistribution.destroy();
+            }
+            
             const ctx = document.getElementById('chart-pax').getContext('2d');
             
             const inboundPax = flightData.inbound.reduce((sum, r) => sum + r.pax, 0);
