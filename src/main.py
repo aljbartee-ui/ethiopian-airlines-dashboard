@@ -11,6 +11,7 @@ from src.routes.admin_fixed import admin_bp
 from src.routes.sales_working import sales_bp
 from src.routes.charts_redesigned import charts_bp
 from src.routes.flight_load import flight_load_bp
+from src.routes.route_analysis import route_analysis_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -21,6 +22,7 @@ app.register_blueprint(admin_bp, url_prefix='/api')
 app.register_blueprint(sales_bp, url_prefix='/api')
 app.register_blueprint(charts_bp, url_prefix='/api')
 app.register_blueprint(flight_load_bp, url_prefix='/api/flight-load')
+app.register_blueprint(route_analysis_bp, url_prefix='/route-analysis')
 
 # uncomment if you need to use database
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}"
@@ -90,6 +92,14 @@ def admin_panel():
     if static_folder_path is None:
         return "Static folder not configured", 404
     return send_from_directory(static_folder_path, 'admin.html')
+
+@app.route('/route-analysis')
+def route_analysis():
+    """Serve the route analysis dashboard"""
+    static_folder_path = app.static_folder
+    if static_folder_path is None:
+        return "Static folder not configured", 404
+    return send_from_directory(static_folder_path, 'route-analysis.html')
 
 # Public authentication endpoints
 @app.route('/api/public/login', methods=['POST'])
