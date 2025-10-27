@@ -3,7 +3,7 @@ import sys
 # DON'T CHANGE THIS !!!
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from flask import Flask, send_from_directory, session, request, jsonify
+from flask import Flask, send_from_directory, session, request, jsonify, redirect
 from src.models.user import db
 from src.models.sales import SalesData, AdminUser
 from src.routes.user import user_bp
@@ -79,11 +79,27 @@ def dashboard():
 
 @app.route('/flight-load')
 def flight_load():
-    """Serve the flight load dashboard"""
+    """Serve the flight load menu page"""
     static_folder_path = app.static_folder
     if static_folder_path is None:
         return "Static folder not configured", 404
-    return send_from_directory(static_folder_path, 'flight-load.html')
+    return send_from_directory(static_folder_path, 'flight-load-menu.html')
+
+@app.route('/flight-load/load-factor')
+def flight_load_factor():
+    """Serve the load factor dashboard"""
+    static_folder_path = app.static_folder
+    if static_folder_path is None:
+        return "Static folder not configured", 404
+    return send_from_directory(static_folder_path, 'flight-load-factor.html')
+
+@app.route('/flight-load/route-analysis')
+def flight_load_route_analysis():
+    """Serve the route analysis dashboard under flight load"""
+    static_folder_path = app.static_folder
+    if static_folder_path is None:
+        return "Static folder not configured", 404
+    return send_from_directory(static_folder_path, 'flight-load-route-analysis.html')
 
 @app.route('/admin')
 def admin_panel():
@@ -93,13 +109,11 @@ def admin_panel():
         return "Static folder not configured", 404
     return send_from_directory(static_folder_path, 'admin.html')
 
+# Legacy route - redirect to new location
 @app.route('/route-analysis')
-def route_analysis():
-    """Serve the route analysis dashboard"""
-    static_folder_path = app.static_folder
-    if static_folder_path is None:
-        return "Static folder not configured", 404
-    return send_from_directory(static_folder_path, 'route-analysis.html')
+def route_analysis_redirect():
+    """Redirect old route analysis URL to new location"""
+    return redirect('/flight-load/route-analysis', code=301)
 
 # Public authentication endpoints
 @app.route('/api/public/login', methods=['POST'])
