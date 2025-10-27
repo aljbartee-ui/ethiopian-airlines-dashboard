@@ -2,30 +2,37 @@ from src.models.user import db
 from datetime import datetime
 import json
 
-class RouteAnalysisData(db.Model):
-    """Model for storing route analysis data from Excel uploads"""
+class RouteAnalysis(db.Model):
+    """Model for storing individual route analysis records"""
+    __tablename__ = 'route_analysis'
+    
     id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(255), nullable=False)
+    route_code = db.Column(db.String(10), nullable=False)
+    city = db.Column(db.String(100))
+    country = db.Column(db.String(100))
+    total_passengers = db.Column(db.Integer, default=0)
+    previous_week = db.Column(db.Integer, default=0)
+    variance = db.Column(db.Integer, default=0)
+    variance_pct = db.Column(db.Float, default=0.0)
+    daily_data = db.Column(db.JSON)  # Store daily passenger counts as JSON
+    week_identifier = db.Column(db.String(100))  # Week/sheet name
     upload_date = db.Column(db.DateTime, default=datetime.utcnow)
-    data_json = db.Column(db.Text, nullable=False)  # Store the processed data as JSON
-    is_active = db.Column(db.Boolean, default=True)  # Only one dataset should be active at a time
     
     def __repr__(self):
-        return f'<RouteAnalysisData {self.filename}>'
+        return f'<RouteAnalysis {self.route_code} - {self.total_passengers} pax>'
     
     def to_dict(self):
         return {
             'id': self.id,
-            'filename': self.filename,
-            'upload_date': self.upload_date.isoformat(),
-            'is_active': self.is_active
+            'route_code': self.route_code,
+            'city': self.city,
+            'country': self.country,
+            'total_passengers': self.total_passengers,
+            'previous_week': self.previous_week,
+            'variance': self.variance,
+            'variance_pct': self.variance_pct,
+            'daily_data': self.daily_data,
+            'week_identifier': self.week_identifier,
+            'upload_date': self.upload_date.isoformat() if self.upload_date else None
         }
-    
-    def get_data(self):
-        """Return the stored data as a Python object"""
-        return json.loads(self.data_json)
-    
-    def set_data(self, data):
-        """Store data as JSON string"""
-        self.data_json = json.dumps(data, default=str)
 
