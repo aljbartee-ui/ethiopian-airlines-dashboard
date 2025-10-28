@@ -157,6 +157,11 @@
             color: white;
         }
 
+        .nav-btn.debug {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+        }
+
         .nav-btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
@@ -293,7 +298,7 @@
             background: white;
             color: var(--et-dark-green);
             cursor: pointer;
-            min-width: 250px;
+            min-width: 300px;
             transition: all 0.3s ease;
         }
 
@@ -323,6 +328,60 @@
         .filter-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(252, 204, 44, 0.4);
+        }
+
+        /* Weeks Info Section */
+        .weeks-info {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            margin-bottom: 30px;
+        }
+
+        .weeks-info h3 {
+            color: var(--et-dark-green);
+            margin-bottom: 15px;
+            font-size: 1.4em;
+            font-weight: 700;
+        }
+
+        .weeks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .week-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid var(--et-green);
+        }
+
+        .week-card.current {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            border-left-color: var(--et-green);
+        }
+
+        .week-name {
+            font-weight: 700;
+            color: var(--et-dark-green);
+            margin-bottom: 5px;
+        }
+
+        .week-dates {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .week-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: #555;
         }
 
         /* Metrics Grid */
@@ -560,6 +619,7 @@
                 <a href="/flight-load" class="nav-btn back">← Back to Flight Load</a>
                 <a href="/" class="nav-btn home">🏠 Home</a>
                 <button class="nav-btn clear" id="clearDataBtn">🗑️ Clear All Data</button>
+                <button class="nav-btn debug" id="debugBtn">🐛 Debug Data</button>
             </div>
         </div>
 
@@ -587,6 +647,11 @@
             <button class="nav-btn clear" id="clearWeekBtn" style="padding: 10px 20px;">Clear This Week</button>
         </div>
 
+        <div class="weeks-info" id="weeksInfo" style="display: none;">
+            <h3>📊 Available Weeks</h3>
+            <div class="weeks-grid" id="weeksGrid"></div>
+        </div>
+
         <div id="dashboardContent"></div>
     </div>
 
@@ -603,6 +668,9 @@
         const weekFilter = document.getElementById('weekFilter');
         const applyFilter = document.getElementById('applyFilter');
         const clearWeekBtn = document.getElementById('clearWeekBtn');
+        const weeksInfo = document.getElementById('weeksInfo');
+        const weeksGrid = document.getElementById('weeksGrid');
+        const debugBtn = document.getElementById('debugBtn');
 
         let currentWeekFilter = 'all';
         let availableWeeks = [];
@@ -664,13 +732,21 @@
                 if (result.success && result.weeks.length > 0) {
                     availableWeeks = result.weeks;
                     updateWeekFilterDropdown();
+                    updateWeeksGrid();
                     filterSection.style.display = 'flex';
+                    weeksInfo.style.display = 'block';
+                    
+                    if (result.weeks.length > 1) {
+                        showMessage(`Found ${result.weeks.length} weeks of data. Use the filter to view specific weeks.`, 'info');
+                    }
                 } else {
                     filterSection.style.display = 'none';
+                    weeksInfo.style.display = 'none';
                 }
             } catch (error) {
                 console.error('Error loading weeks:', error);
                 filterSection.style.display = 'none';
+                weeksInfo.style.display = 'none';
             }
         }
 
@@ -680,11 +756,35 @@
                 const option = document.createElement('option');
                 option.value = week.identifier;
                 option.textContent = week.display_name;
+                if (week.identifier === currentWeekFilter) {
+                    option.selected = true;
+                }
                 weekFilter.appendChild(option);
             });
-            
-            // Set current filter
-            weekFilter.value = currentWeekFilter;
+        }
+
+        function updateWeeksGrid() {
+            weeksGrid.innerHTML = '';
+            availableWeeks.forEach((week, index) => {
+                const weekCard = document.createElement('div');
+                weekCard.className = `week-card ${index === 0 ? 'current' : ''}`;
+                weekCard.innerHTML = `
+                    <div class="week-name">${week.identifier}</div>
+                    <div class="week-dates">${week.start_date} - ${week.end_date}</div>
+                    <div class="week-stats">
+                        <span>📅 Week ${index + 1}</span>
+                        <button class="filter-btn" onclick="selectWeek('${week.identifier}')" style="padding: 4px 8px; font-size: 0.8em;">View</button>
+                    </div>
+                `;
+                weeksGrid.appendChild(weekCard);
+            });
+        }
+
+        function selectWeek(weekIdentifier) {
+            currentWeekFilter = weekIdentifier;
+            weekFilter.value = weekIdentifier;
+            loadDashboardData();
+            loadCharts();
         }
 
         fileInput.addEventListener('change', function() {
@@ -702,6 +802,23 @@
             currentWeekFilter = weekFilter.value;
             loadDashboardData();
             loadCharts();
+        });
+
+        // Debug button
+        debugBtn.addEventListener('click', async function() {
+            try {
+                const response = await fetch('/flight-load/route-analysis/all-data');
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('All weeks data:', result.weeks);
+                    showMessage(`Debug: Found ${result.weeks.length} weeks in database. Check console for details.`, 'info');
+                } else {
+                    showMessage('Debug failed: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Debug error: ' + error.message, 'error');
+            }
         });
 
         // Clear all data button
@@ -724,6 +841,7 @@
                             </div>
                         `;
                         filterSection.style.display = 'none';
+                        weeksInfo.style.display = 'none';
                         currentWeekFilter = 'all';
                     } else {
                         showMessage('Error clearing data: ' + result.error, 'error');
@@ -791,7 +909,7 @@
                     // Save to localStorage for persistence
                     saveDataToLocalStorage({success: true, summary: result.summary});
                     // Reload weeks and data
-                    loadAvailableWeeks();
+                    await loadAvailableWeeks();
                     displayDashboard(result.summary);
                     loadCharts();
                 } else {
