@@ -17,6 +17,8 @@ class RouteAnalysis(db.Model):
     daily_data = db.Column(db.JSON)  # Store daily passenger counts as JSON
     week_identifier = db.Column(db.String(100))  # Week/sheet name
     upload_date = db.Column(db.DateTime, default=datetime.utcnow)
+    # Add session identifier for persistence
+    session_id = db.Column(db.String(100), default='default')
     
     def __repr__(self):
         return f'<RouteAnalysis {self.route_code} - {self.total_passengers} pax>'
@@ -33,6 +35,6 @@ class RouteAnalysis(db.Model):
             'variance_pct': self.variance_pct,
             'daily_data': self.daily_data,
             'week_identifier': self.week_identifier,
-            'upload_date': self.upload_date.isoformat() if self.upload_date else None
+            'upload_date': self.upload_date.isoformat() if self.upload_date else None,
+            'session_id': self.session_id
         }
-
