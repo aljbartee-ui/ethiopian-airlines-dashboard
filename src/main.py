@@ -22,7 +22,7 @@ app.register_blueprint(admin_bp, url_prefix='/api')
 app.register_blueprint(sales_bp, url_prefix='/api')
 app.register_blueprint(charts_bp, url_prefix='/api')
 app.register_blueprint(flight_load_bp, url_prefix='/api/flight-load')
-app.register_blueprint(route_analysis_bp, url_prefix='/route-analysis')
+app.register_blueprint(route_analysis_bp, url_prefix='/flight-load/route-analysis')
 
 # uncomment if you need to use database
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}"
