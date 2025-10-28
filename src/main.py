@@ -17,6 +17,7 @@ app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'sta
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
+# Register blueprints with correct URL prefixes
 app.register_blueprint(user_bp, url_prefix='/api')
 app.register_blueprint(admin_bp, url_prefix='/api')
 app.register_blueprint(sales_bp, url_prefix='/api')
@@ -24,12 +25,18 @@ app.register_blueprint(charts_bp, url_prefix='/api')
 app.register_blueprint(flight_load_bp, url_prefix='/api/flight-load')
 app.register_blueprint(route_analysis_bp, url_prefix='/flight-load/route-analysis')
 
-# uncomment if you need to use database
+# Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
+
+# Create database tables
 with app.app_context():
-    db.create_all()
+    try:
+        db.create_all()
+        print("✅ Database tables created successfully")
+    except Exception as e:
+        print(f"❌ Error creating database tables: {e}")
 
 @app.route('/')
 def home():
