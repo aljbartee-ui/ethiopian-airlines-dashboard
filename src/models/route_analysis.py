@@ -1,3 +1,8 @@
+"""
+Route Analysis Model
+Stores route analysis data with persistence
+"""
+
 from src.models.user import db
 from datetime import datetime
 import json
