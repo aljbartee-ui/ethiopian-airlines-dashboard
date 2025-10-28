@@ -124,6 +124,7 @@
             justify-content: center;
             gap: 15px;
             margin-top: 25px;
+            flex-wrap: wrap;
         }
 
         .nav-btn {
@@ -260,6 +261,68 @@
             color: #666;
             font-style: italic;
             font-size: 0.95em;
+        }
+
+        /* Week Filter Section */
+        .filter-section {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            margin-bottom: 30px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-section h3 {
+            color: var(--et-dark-green);
+            margin: 0;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .week-select {
+            padding: 12px 20px;
+            border: 2px solid var(--et-green);
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 500;
+            background: white;
+            color: var(--et-dark-green);
+            cursor: pointer;
+            min-width: 250px;
+            transition: all 0.3s ease;
+        }
+
+        .week-select:hover {
+            border-color: var(--et-yellow);
+            box-shadow: 0 4px 12px rgba(92, 140, 76, 0.2);
+        }
+
+        .week-select:focus {
+            outline: none;
+            border-color: var(--et-yellow);
+            box-shadow: 0 4px 15px rgba(252, 204, 44, 0.3);
+        }
+
+        .filter-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--et-yellow), var(--et-dark-yellow));
+            color: #1a2f1a;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(252, 204, 44, 0.4);
         }
 
         /* Metrics Grid */
@@ -462,6 +525,15 @@
             .nav-buttons {
                 flex-direction: column;
             }
+
+            .filter-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .week-select {
+                min-width: auto;
+            }
         }
     </style>
 </head>
@@ -476,7 +548,7 @@
                 </div>
                 <div>
                     <h1>🌍 Route Analysis Dashboard</h1>
-                    <p>Weekly Passenger Traffic by Destination</p>
+                    <p>Multi-Week Passenger Traffic Analysis by Destination</p>
                 </div>
                 <div class="logo-stripes">
                     <div class="logo-stripe stripe-green"></div>
@@ -487,7 +559,7 @@
             <div class="nav-buttons">
                 <a href="/flight-load" class="nav-btn back">← Back to Flight Load</a>
                 <a href="/" class="nav-btn home">🏠 Home</a>
-                <button class="nav-btn clear" id="clearDataBtn">🗑️ Clear Data</button>
+                <button class="nav-btn clear" id="clearDataBtn">🗑️ Clear All Data</button>
             </div>
         </div>
 
@@ -506,6 +578,15 @@
             <div id="uploadMessage"></div>
         </div>
 
+        <div class="filter-section" id="filterSection" style="display: none;">
+            <h3>📅 Filter by Week:</h3>
+            <select id="weekFilter" class="week-select">
+                <option value="all">All Weeks</option>
+            </select>
+            <button class="filter-btn" id="applyFilter">Apply Filter</button>
+            <button class="nav-btn clear" id="clearWeekBtn" style="padding: 10px 20px;">Clear This Week</button>
+        </div>
+
         <div id="dashboardContent"></div>
     </div>
 
@@ -518,6 +599,13 @@
         const uploadMessage = document.getElementById('uploadMessage');
         const dashboardContent = document.getElementById('dashboardContent');
         const clearDataBtn = document.getElementById('clearDataBtn');
+        const filterSection = document.getElementById('filterSection');
+        const weekFilter = document.getElementById('weekFilter');
+        const applyFilter = document.getElementById('applyFilter');
+        const clearWeekBtn = document.getElementById('clearWeekBtn');
+
+        let currentWeekFilter = 'all';
+        let availableWeeks = [];
 
         // Data persistence functions
         function saveDataToLocalStorage(data) {
@@ -567,6 +655,38 @@
             }, 5000);
         }
 
+        // Load available weeks for filtering
+        async function loadAvailableWeeks() {
+            try {
+                const response = await fetch('/flight-load/route-analysis/weeks');
+                const result = await response.json();
+                
+                if (result.success && result.weeks.length > 0) {
+                    availableWeeks = result.weeks;
+                    updateWeekFilterDropdown();
+                    filterSection.style.display = 'flex';
+                } else {
+                    filterSection.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading weeks:', error);
+                filterSection.style.display = 'none';
+            }
+        }
+
+        function updateWeekFilterDropdown() {
+            weekFilter.innerHTML = '<option value="all">All Weeks</option>';
+            availableWeeks.forEach(week => {
+                const option = document.createElement('option');
+                option.value = week.identifier;
+                option.textContent = week.display_name;
+                weekFilter.appendChild(option);
+            });
+            
+            // Set current filter
+            weekFilter.value = currentWeekFilter;
+        }
+
         fileInput.addEventListener('change', function() {
             if (this.files.length > 0) {
                 fileName.textContent = this.files[0].name;
@@ -577,9 +697,16 @@
             }
         });
 
-        // Clear data button
+        // Apply week filter
+        applyFilter.addEventListener('click', function() {
+            currentWeekFilter = weekFilter.value;
+            loadDashboardData();
+            loadCharts();
+        });
+
+        // Clear all data button
         clearDataBtn.addEventListener('click', async function() {
-            if (confirm('Are you sure you want to clear all route analysis data? This cannot be undone.')) {
+            if (confirm('Are you sure you want to clear ALL route analysis data? This cannot be undone.')) {
                 try {
                     const response = await fetch('/flight-load/route-analysis/clear', {
                         method: 'POST'
@@ -589,18 +716,53 @@
                     
                     if (result.success) {
                         clearLocalStorage();
-                        showMessage('Data cleared successfully', 'success');
+                        showMessage('All data cleared successfully', 'success');
                         dashboardContent.innerHTML = `
                             <div class="no-data">
                                 <h2>📊 No Data Available</h2>
                                 <p>Please upload an Excel file to view route analysis</p>
                             </div>
                         `;
+                        filterSection.style.display = 'none';
+                        currentWeekFilter = 'all';
                     } else {
                         showMessage('Error clearing data: ' + result.error, 'error');
                     }
                 } catch (error) {
                     showMessage('Error clearing data: ' + error.message, 'error');
+                }
+            }
+        });
+
+        // Clear specific week button
+        clearWeekBtn.addEventListener('click', async function() {
+            if (currentWeekFilter === 'all') {
+                showMessage('Please select a specific week to clear', 'error');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to clear data for week "${currentWeekFilter}"?`)) {
+                try {
+                    const response = await fetch('/flight-load/route-analysis/clear-week', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ week: currentWeekFilter })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showMessage(result.message, 'success');
+                        // Reload weeks and data
+                        loadAvailableWeeks();
+                        loadDashboardData();
+                    } else {
+                        showMessage('Error clearing week: ' + result.error, 'error');
+                    }
+                } catch (error) {
+                    showMessage('Error clearing week: ' + error.message, 'error');
                 }
             }
         });
@@ -628,6 +790,8 @@
                     showMessage(result.message, 'success');
                     // Save to localStorage for persistence
                     saveDataToLocalStorage({success: true, summary: result.summary});
+                    // Reload weeks and data
+                    loadAvailableWeeks();
                     displayDashboard(result.summary);
                     loadCharts();
                 } else {
@@ -644,21 +808,22 @@
         // Load dashboard data
         async function loadDashboardData() {
             try {
-                // Try to load from server first
-                const response = await fetch('/flight-load/route-analysis/data');
+                const url = currentWeekFilter === 'all' 
+                    ? '/flight-load/route-analysis/data'
+                    : `/flight-load/route-analysis/data?week=${encodeURIComponent(currentWeekFilter)}`;
+                
+                const response = await fetch(url);
                 const result = await response.json();
                 
                 if (result.success) {
                     // Save to localStorage for persistence
                     saveDataToLocalStorage(result);
                     displayDashboard(result.summary);
-                    loadCharts();
                 } else {
                     // Try to load from localStorage if server has no data
                     const savedData = loadDataFromLocalStorage();
                     if (savedData && savedData.success) {
                         displayDashboard(savedData.summary);
-                        loadCharts();
                         showMessage('Loaded previously saved data', 'info');
                     } else {
                         dashboardContent.innerHTML = `
@@ -675,7 +840,6 @@
                 const savedData = loadDataFromLocalStorage();
                 if (savedData && savedData.success) {
                     displayDashboard(savedData.summary);
-                    loadCharts();
                     showMessage('Loaded previously saved data (offline mode)', 'info');
                 } else {
                     dashboardContent.innerHTML = `<div class="error">❌ Error loading data: ${error.message}</div>`;
@@ -687,12 +851,16 @@
         function displayDashboard(summary) {
             const varianceClass = summary.variance >= 0 ? 'positive' : 'negative';
             const varianceSymbol = summary.variance >= 0 ? '+' : '';
+            const weekDisplay = currentWeekFilter === 'all' 
+                ? 'All Weeks' 
+                : `${summary.week} (${summary.week_start} - ${summary.week_end})`;
             
             dashboardContent.innerHTML = `
                 <div class="metrics-grid">
                     <div class="metric-card">
                         <div class="metric-label">Total Routes</div>
                         <div class="metric-value">${summary.total_routes}</div>
+                        <div style="color: #666; font-size: 0.9em; margin-top: 8px;">${weekDisplay}</div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-label">Total Passengers</div>
@@ -717,7 +885,7 @@
                     </div>
                     <div class="metric-card">
                         <div class="metric-label">Week Period</div>
-                        <div class="metric-value" style="font-size: 1.4em;">${summary.week}</div>
+                        <div class="metric-value" style="font-size: 1.4em;">${summary.week_start} to ${summary.week_end}</div>
                     </div>
                 </div>
 
@@ -775,14 +943,23 @@
         // Load top destinations chart
         async function loadTopDestinations() {
             try {
-                const response = await fetch('/flight-load/route-analysis/charts/top-destinations?limit=10');
+                const url = currentWeekFilter === 'all'
+                    ? '/flight-load/route-analysis/charts/top-destinations?limit=10'
+                    : `/flight-load/route-analysis/charts/top-destinations?limit=10&week=${encodeURIComponent(currentWeekFilter)}`;
+                
+                const response = await fetch(url);
                 const data = await response.json();
                 
                 if (data.success) {
                     const ctx = document.getElementById('topDestinationsChart');
                     if (ctx) {
+                        // Destroy existing chart if it exists
+                        if (window.topDestinationsChart) {
+                            window.topDestinationsChart.destroy();
+                        }
+                        
                         requestAnimationFrame(() => {
-                            new Chart(ctx, {
+                            window.topDestinationsChart = new Chart(ctx, {
                                 type: 'bar',
                                 data: {
                                     labels: data.labels,
@@ -855,14 +1032,22 @@
         // Load daily trend chart
         async function loadDailyTrend() {
             try {
-                const response = await fetch('/flight-load/route-analysis/charts/daily-trend');
+                const url = currentWeekFilter === 'all'
+                    ? '/flight-load/route-analysis/charts/daily-trend'
+                    : `/flight-load/route-analysis/charts/daily-trend?week=${encodeURIComponent(currentWeekFilter)}`;
+                
+                const response = await fetch(url);
                 const data = await response.json();
                 
                 if (data.success) {
                     const ctx = document.getElementById('dailyTrendChart');
                     if (ctx) {
+                        if (window.dailyTrendChart) {
+                            window.dailyTrendChart.destroy();
+                        }
+                        
                         requestAnimationFrame(() => {
-                            new Chart(ctx, {
+                            window.dailyTrendChart = new Chart(ctx, {
                                 type: 'line',
                                 data: {
                                     labels: data.labels,
@@ -936,14 +1121,22 @@
         // Load week comparison chart
         async function loadWeekComparison() {
             try {
-                const response = await fetch('/flight-load/route-analysis/charts/week-comparison');
+                const url = currentWeekFilter === 'all'
+                    ? '/flight-load/route-analysis/charts/week-comparison'
+                    : `/flight-load/route-analysis/charts/week-comparison?week=${encodeURIComponent(currentWeekFilter)}`;
+                
+                const response = await fetch(url);
                 const data = await response.json();
                 
                 if (data.success) {
                     const ctx = document.getElementById('weekComparisonChart');
                     if (ctx) {
+                        if (window.weekComparisonChart) {
+                            window.weekComparisonChart.destroy();
+                        }
+                        
                         requestAnimationFrame(() => {
-                            new Chart(ctx, {
+                            window.weekComparisonChart = new Chart(ctx, {
                                 type: 'bar',
                                 data: {
                                     labels: data.labels,
@@ -1026,31 +1219,29 @@
         // Load distribution chart
         async function loadDistribution() {
             try {
-                const response = await fetch('/flight-load/route-analysis/charts/passenger-distribution');
+                const url = currentWeekFilter === 'all'
+                    ? '/flight-load/route-analysis/charts/passenger-distribution'
+                    : `/flight-load/route-analysis/charts/passenger-distribution?week=${encodeURIComponent(currentWeekFilter)}`;
+                
+                const response = await fetch(url);
                 const data = await response.json();
                 
                 if (data.success) {
                     const ctx = document.getElementById('distributionChart');
                     if (ctx) {
+                        if (window.distributionChart) {
+                            window.distributionChart.destroy();
+                        }
+                        
                         requestAnimationFrame(() => {
-                            new Chart(ctx, {
+                            window.distributionChart = new Chart(ctx, {
                                 type: 'doughnut',
                                 data: {
                                     labels: data.labels,
                                     datasets: [{
                                         label: 'Passengers',
                                         data: data.datasets[0].data,
-                                        backgroundColor: [
-                                            'rgba(92, 140, 76, 0.9)',
-                                            'rgba(252, 204, 44, 0.9)',
-                                            'rgba(196, 36, 43, 0.9)',
-                                            'rgba(58, 90, 47, 0.9)',
-                                            'rgba(217, 179, 36, 0.9)',
-                                            'rgba(154, 28, 34, 0.9)',
-                                            'rgba(123, 166, 107, 0.9)',
-                                            'rgba(255, 223, 102, 0.9)',
-                                            'rgba(128, 128, 128, 0.7)'
-                                        ],
+                                        backgroundColor: data.datasets[0].backgroundColor,
                                         borderColor: '#fff',
                                         borderWidth: 3,
                                         hoverOffset: 15
@@ -1067,7 +1258,7 @@
                                         legend: {
                                             position: 'right',
                                             labels: { 
-                                                font: { size: 13, weight: '600' },
+                                                font: { size: 12, weight: '600' },
                                                 padding: 15
                                             }
                                         },
@@ -1100,19 +1291,27 @@
         // Load growth rates chart
         async function loadGrowthRates() {
             try {
-                const response = await fetch('/flight-load/route-analysis/charts/growth-rates?limit=10');
+                const url = currentWeekFilter === 'all'
+                    ? '/flight-load/route-analysis/charts/growth-rates?limit=10'
+                    : `/flight-load/route-analysis/charts/growth-rates?limit=10&week=${encodeURIComponent(currentWeekFilter)}`;
+                
+                const response = await fetch(url);
                 const data = await response.json();
                 
                 if (data.success) {
                     const ctx = document.getElementById('growthRatesChart');
                     if (ctx) {
+                        if (window.growthRatesChart) {
+                            window.growthRatesChart.destroy();
+                        }
+                        
                         requestAnimationFrame(() => {
                             // Color based on positive/negative growth
                             const colors = data.datasets[0].data.map(v => 
                                 v >= 0 ? 'rgba(92, 140, 76, 0.8)' : 'rgba(196, 36, 43, 0.8)'
                             );
                             
-                            new Chart(ctx, {
+                            window.growthRatesChart = new Chart(ctx, {
                                 type: 'bar',
                                 data: {
                                     labels: data.labels,
@@ -1200,8 +1399,15 @@
             return gradient;
         }
 
+        // Initialize dashboard
+        async function initializeDashboard() {
+            await loadAvailableWeeks();
+            await loadDashboardData();
+            await loadCharts();
+        }
+
         // Load data on page load
-        loadDashboardData();
+        initializeDashboard();
     </script>
 </body>
 </html>
