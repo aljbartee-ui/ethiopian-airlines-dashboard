@@ -1,6 +1,6 @@
 """
 Route Analysis Routes
-Handles route analysis dashboard with multi-week support and date filtering
+Handles route analysis dashboard with proper multi-week support
 """
 
 from flask import Blueprint, request, jsonify, current_app
@@ -236,7 +236,7 @@ def parse_route_analysis_excel(file_path):
 
 @route_analysis_bp.route('/upload', methods=['POST'])
 def upload_route_analysis():
-    """Handle route analysis Excel file upload with multi-week support"""
+    """Handle route analysis Excel file upload with proper multi-week support"""
     try:
         if 'file' not in request.files:
             return jsonify({'success': False, 'error': 'No file provided'}), 400
@@ -266,7 +266,20 @@ def upload_route_analysis():
         # Get session ID for persistence
         session_id = get_current_session_id()
         
-        # Store in database with session ID (don't delete existing data - allow multiple weeks)
+        # Check if this week already exists
+        existing_week = RouteAnalysis.query.filter_by(
+            session_id=session_id, 
+            week_identifier=parsed_data['sheet_name']
+        ).first()
+        
+        if existing_week:
+            # Delete existing data for this week
+            RouteAnalysis.query.filter_by(
+                session_id=session_id, 
+                week_identifier=parsed_data['sheet_name']
+            ).delete()
+        
+        # Store in database with session ID
         for route in parsed_data['routes']:
             route_record = RouteAnalysis(
                 route_code=route['code'],
@@ -330,6 +343,9 @@ def get_available_weeks():
                 'display_name': f"{week.week_identifier} ({week.week_start_date} - {week.week_end_date})"
             })
         
+        # Sort weeks by start date (most recent first)
+        week_list.sort(key=lambda x: x['start_date'], reverse=True)
+        
         return jsonify({
             'success': True,
             'weeks': week_list
@@ -351,26 +367,20 @@ def get_route_analysis_data():
                 session_id=session_id, 
                 week_identifier=week_filter
             ).all()
+            current_week = week_filter
         else:
             routes = RouteAnalysis.query.filter_by(session_id=session_id).all()
+            # Get the most recent week for display
+            recent_week = RouteAnalysis.query.filter_by(session_id=session_id).order_by(
+                RouteAnalysis.week_start_date.desc()
+            ).first()
+            current_week = recent_week.week_identifier if recent_week else 'Unknown'
         
         if not routes:
             return jsonify({
                 'success': False,
                 'message': 'No data available. Please upload an Excel file first.'
             })
-        
-        # Group by week for multi-week analysis
-        weeks_data = {}
-        for route in routes:
-            week_key = route.week_identifier
-            if week_key not in weeks_data:
-                weeks_data[week_key] = {
-                    'routes': [],
-                    'week_start': route.week_start_date,
-                    'week_end': route.week_end_date
-                }
-            weeks_data[week_key]['routes'].append(route)
         
         # Calculate summary metrics for the filtered data
         total_passengers = sum(r.total_passengers for r in routes)
@@ -392,9 +402,18 @@ def get_route_analysis_data():
         busiest_day_pax = all_daily_totals[busiest_day] if busiest_day else 0
         
         # Get current week info
-        current_week = routes[0].week_identifier if routes else 'Unknown'
-        current_week_start = routes[0].week_start_date if routes else 'Unknown'
-        current_week_end = routes[0].week_end_date if routes else 'Unknown'
+        if week_filter and week_filter != 'all':
+            current_week_data = RouteAnalysis.query.filter_by(
+                session_id=session_id, 
+                week_identifier=week_filter
+            ).first()
+        else:
+            current_week_data = RouteAnalysis.query.filter_by(session_id=session_id).order_by(
+                RouteAnalysis.week_start_date.desc()
+            ).first()
+        
+        current_week_start = current_week_data.week_start_date if current_week_data else 'Unknown'
+        current_week_end = current_week_data.week_end_date if current_week_data else 'Unknown'
         
         return jsonify({
             'success': True,
@@ -416,8 +435,7 @@ def get_route_analysis_data():
                 'week': current_week,
                 'week_start': current_week_start,
                 'week_end': current_week_end
-            },
-            'weeks_data': len(weeks_data)
+            }
         })
         
     except Exception as e:
@@ -721,4 +739,39 @@ def clear_specific_week():
         
     except Exception as e:
         db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@route_analysis_bp.route('/all-data', methods=['GET'])
+def get_all_weeks_data():
+    """Get data for all weeks to debug"""
+    try:
+        session_id = get_current_session_id()
+        weeks = RouteAnalysis.query.with_entities(
+            RouteAnalysis.week_identifier,
+            RouteAnalysis.week_start_date,
+            RouteAnalysis.week_end_date
+        ).filter_by(session_id=session_id).distinct().all()
+        
+        all_data = []
+        for week in weeks:
+            routes = RouteAnalysis.query.filter_by(
+                session_id=session_id,
+                week_identifier=week.week_identifier
+            ).all()
+            
+            week_data = {
+                'week_identifier': week.week_identifier,
+                'week_start': week.week_start_date,
+                'week_end': week.week_end_date,
+                'total_routes': len(routes),
+                'total_passengers': sum(r.total_passengers for r in routes)
+            }
+            all_data.append(week_data)
+        
+        return jsonify({
+            'success': True,
+            'weeks': all_data
+        })
+        
+    except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
