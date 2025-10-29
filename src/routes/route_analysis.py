@@ -9,7 +9,7 @@ import os
 import time
 from datetime import datetime
 from src.models.user import db
-from src.models.route_analysis_v2 import RouteAnalysisWeek, RouteAnalysisUpload
+from src.models.route_analysis import RouteAnalysisWeek, RouteAnalysisUpload
 from src.utils.airport_lookup import get_airport_info
 import json
 
