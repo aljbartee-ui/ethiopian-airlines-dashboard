@@ -1,4 +1,5 @@
-"""
+# Version: 2.0 - Database Storage with Fixed Imports
+""" 
 Complete Route Analysis Routes with Database Storage
 Persistent data across server restarts
 """
@@ -253,7 +254,10 @@ def upload_route_analysis():
         RouteAnalysisWeek.query.delete()
         db.session.commit()
         
-        # Store each week's data in database
+        # Store each week's data in database (batch commit every 10 weeks)
+        batch_size = 10
+        weeks_processed = 0
+        
         for week_data in result['weeks']:
             # Create database record
             week_record = RouteAnalysisWeek(
@@ -288,8 +292,16 @@ def upload_route_analysis():
             )
             
             db.session.add(week_record)
+            weeks_processed += 1
+            
+            # Commit in batches to avoid timeout
+            if weeks_processed % batch_size == 0:
+                db.session.commit()
+                print(f"✅ Committed batch: {weeks_processed} weeks processed")
         
+        # Final commit for remaining weeks
         db.session.commit()
+        print(f"✅ All {weeks_processed} weeks committed to database")
         
         # Record upload history
         processing_time = time.time() - start_time
@@ -687,3 +699,4 @@ def get_daily_trend_chart():
     
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
