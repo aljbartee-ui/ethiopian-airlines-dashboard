@@ -6,7 +6,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from flask import Flask, send_from_directory, session, request, jsonify, redirect
 from src.models.user import db
 from src.models.sales import SalesData, AdminUser
-from src.models.route_analysis import RouteAnalysisWeek, RouteAnalysisUpload
 from src.routes.user import user_bp
 from src.routes.admin_fixed import admin_bp
 from src.routes.sales_working import sales_bp
@@ -23,17 +22,14 @@ app.register_blueprint(admin_bp, url_prefix='/api')
 app.register_blueprint(sales_bp, url_prefix='/api')
 app.register_blueprint(charts_bp, url_prefix='/api')
 app.register_blueprint(flight_load_bp, url_prefix='/api/flight-load')
-app.register_blueprint(route_analysis_bp, url_prefix='/flight-load/route-analysis')
+app.register_blueprint(route_analysis_bp, url_prefix='/route-analysis')
 
-# Database configuration
+# uncomment if you need to use database
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
-
-# Create all database tables including route analysis tables
 with app.app_context():
     db.create_all()
-    print("✅ Database tables created successfully")
 
 @app.route('/')
 def home():
@@ -105,14 +101,6 @@ def flight_load_route_analysis():
         return "Static folder not configured", 404
     return send_from_directory(static_folder_path, 'flight-load-route-analysis.html')
 
-@app.route('/flight-load/menu')
-def flight_load_menu():
-    """Serve the flight load menu page (alternative route)"""
-    static_folder_path = app.static_folder
-    if static_folder_path is None:
-        return "Static folder not configured", 404
-    return send_from_directory(static_folder_path, 'flight-load-menu.html')
-
 @app.route('/admin')
 def admin_panel():
     """Serve the admin panel"""
@@ -173,4 +161,3 @@ def serve(path):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-

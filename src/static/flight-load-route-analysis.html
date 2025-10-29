@@ -3,10 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Route Analysis - Ethiopian Airlines</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Ethiopian Airlines - Route Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
+        :root {
+            /* Ethiopian Airlines Official Colors */
+            --et-green: #5C8C4C;
+            --et-yellow: #FCCC2C;
+            --et-red: #C4242B;
+            --et-dark-green: #3a5a2f;
+            --et-light-green: #7ba66b;
+            --et-dark-yellow: #d9b324;
+            --et-dark-red: #9a1c22;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,229 +25,176 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1a472a 0%, #2d5016 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a2f1a 0%, #2d4a2d 50%, #1f3520 100%);
             min-height: 100vh;
             padding: 20px;
             position: relative;
             overflow-x: hidden;
         }
 
-        /* Ethiopian flag animated stripes */
+        /* Animated Ethiopian flag stripes background */
         body::before {
             content: '';
             position: fixed;
             top: 0;
             left: 0;
-            right: 0;
-            height: 8px;
-            background: linear-gradient(90deg, 
-                #078930 0%, #078930 33.33%,
-                #FCDD09 33.33%, #FCDD09 66.66%,
-                #DA121A 66.66%, #DA121A 100%);
-            z-index: 1000;
-            animation: slideStripe 20s linear infinite;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, transparent 0%, rgba(92, 140, 76, 0.05) 33%, transparent 33%),
+                linear-gradient(90deg, transparent 33%, rgba(252, 204, 44, 0.05) 66%, transparent 66%),
+                linear-gradient(90deg, transparent 66%, rgba(196, 36, 43, 0.05) 100%);
+            animation: slideStripes 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
         }
 
-        @keyframes slideStripe {
-            0% { background-position: 0 0; }
-            100% { background-position: 100px 0; }
+        @keyframes slideStripes {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(100px); }
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1900px;
             margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
 
+        /* Header with Ethiopian Airlines branding */
         .header {
             text-align: center;
-            color: white;
-            margin-bottom: 30px;
-            padding-top: 20px;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease;
+            position: relative;
         }
 
-        .header h1 {
-            font-size: 2.5em;
-            font-weight: 700;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-
-        /* Navigation buttons */
-        .nav-buttons {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #078930 0%, #05661f 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(7, 137, 48, 0.4);
-        }
-
-        .btn-secondary {
-            background: white;
-            color: #1a472a;
-        }
-
-        .btn-secondary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
-        }
-
-        /* Upload Section */
-        .upload-section {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        .upload-section h2 {
-            color: #1a472a;
-            margin-bottom: 20px;
-            font-size: 1.5em;
-        }
-
-        .file-input-wrapper {
-            display: flex;
-            gap: 15px;
+        .header-logo {
+            display: inline-flex;
             align-items: center;
-            flex-wrap: wrap;
-        }
-
-        input[type="file"] {
-            flex: 1;
-            min-width: 200px;
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1em;
-        }
-
-        .upload-btn {
-            background: linear-gradient(135deg, #078930 0%, #05661f 100%);
-            color: white;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .upload-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(7, 137, 48, 0.4);
-        }
-
-        .upload-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .message {
-            margin-top: 15px;
-            padding: 12px;
-            border-radius: 8px;
-            display: none;
-        }
-
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        /* Week Selection */
-        .week-selection {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        .week-selection h3 {
-            color: #1a472a;
+            gap: 20px;
             margin-bottom: 15px;
         }
 
-        .week-selectors {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-        }
-
-        .selector-group {
+        .logo-stripes {
             display: flex;
-            flex-direction: column;
             gap: 8px;
         }
 
-        .selector-group label {
+        .logo-stripe {
+            width: 6px;
+            height: 60px;
+            border-radius: 3px;
+            animation: stripeGlow 2s ease-in-out infinite;
+        }
+
+        .stripe-green { background: linear-gradient(180deg, var(--et-green), var(--et-dark-green)); animation-delay: 0s; }
+        .stripe-yellow { background: linear-gradient(180deg, var(--et-yellow), var(--et-dark-yellow)); animation-delay: 0.3s; }
+        .stripe-red { background: linear-gradient(180deg, var(--et-red), var(--et-dark-red)); animation-delay: 0.6s; }
+
+        @keyframes stripeGlow {
+            0%, 100% { opacity: 0.8; transform: scaleY(1); }
+            50% { opacity: 1; transform: scaleY(1.05); }
+        }
+
+        h1 {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 20px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            color: var(--et-yellow);
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-top: 8px;
+        }
+
+        /* Back Buttons */
+        .back-buttons {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1001;
+        }
+
+        /* Back Button Style */
+        .back-home-btn {
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
             font-weight: 600;
-            color: #333;
-        }
-
-        select {
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1em;
-            background: white;
             cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        select:focus {
-            outline: none;
-            border-color: #078930;
+        .back-home-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--et-yellow);
+            transform: translateX(-5px);
         }
 
-        /* Metrics Grid */
+        /* Admin Upload Button */
+        .admin-upload-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, var(--et-yellow), var(--et-dark-yellow));
+            color: #1a2f1a;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            border: none;
+            box-shadow: 0 4px 15px rgba(252, 204, 44, 0.3);
+        }
+
+        .admin-upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(252, 204, 44, 0.4);
+        }
+
+        /* Metrics Cards */
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .metric-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 25px;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
@@ -247,629 +205,945 @@
             position: absolute;
             top: 0;
             left: 0;
-            right: 0;
+            width: 100%;
             height: 4px;
-            background: linear-gradient(90deg, #078930, #FCDD09, #DA121A);
-            transform: scaleX(0);
-            transition: transform 0.3s ease;
-        }
-
-        .metric-card:hover::before {
-            transform: scaleX(1);
+            background: linear-gradient(90deg, var(--et-green), var(--et-yellow), var(--et-red));
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .metric-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-color: var(--et-yellow);
+        }
+
+        .metric-card:hover::before {
+            opacity: 1;
         }
 
         .metric-label {
-            font-size: 0.9em;
-            color: #666;
-            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
             font-weight: 500;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .metric-value {
-            font-size: 2em;
-            font-weight: 700;
-            color: #1a472a;
+            color: white;
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 5px;
         }
 
         .metric-subtext {
-            font-size: 0.85em;
-            color: #999;
-            margin-top: 5px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+        }
+
+        .metric-change {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .metric-change.positive {
+            background: rgba(92, 140, 76, 0.2);
+            color: var(--et-light-green);
+        }
+
+        .metric-change.negative {
+            background: rgba(196, 36, 43, 0.2);
+            color: #ff6b6b;
         }
 
         /* Charts Grid */
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
-        }
-
-        .chart-card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        .chart-card h3 {
-            color: #1a472a;
-            margin-bottom: 20px;
-            font-size: 1.3em;
+            gap: 30px;
+            margin-bottom: 40px;
         }
 
         .chart-container {
-            position: relative;
-            height: 350px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            transition: all 0.3s ease;
+            animation: fadeIn 1s ease;
         }
 
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .chart-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .chart-title {
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-icon {
+            width: 8px;
+            height: 8px;
+            background: var(--et-yellow);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--et-yellow);
+        }
+
+        canvas {
+            max-height: 400px;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--et-yellow);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error State */
+        .error-message {
+            background: rgba(196, 36, 43, 0.2);
+            border: 2px solid var(--et-red);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            color: white;
+            margin: 40px 0;
+        }
+
+        .error-message h3 {
+            margin-bottom: 10px;
+            color: var(--et-red);
+        }
+
+        /* Responsive Design */
         @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .subtitle { font-size: 0.95rem; }
             .charts-grid {
                 grid-template-columns: 1fr;
             }
-            
-            .header h1 {
-                font-size: 1.8em;
+            .back-home-btn, .admin-upload-btn {
+                position: static;
+                display: block;
+                margin: 10px auto;
+                width: fit-content;
             }
         }
 
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: white;
-            font-size: 1.2em;
+        /* Upload Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
         }
 
-        .no-data {
-            text-align: center;
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #2d4a2d, #1f3520);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
             padding: 40px;
-            background: white;
-            border-radius: 12px;
-            color: #666;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .file-upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--et-yellow);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .file-upload-area.dragover {
+            border-color: var(--et-green);
+            background: rgba(92, 140, 76, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .selected-file {
+            background: rgba(92, 140, 76, 0.2);
+            border: 1px solid var(--et-green);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            color: white;
+            display: none;
+        }
+
+        .selected-file.active {
+            display: block;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, var(--et-yellow), var(--et-dark-yellow));
+            color: #1a2f1a;
+        }
+
+        .modal-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(252, 204, 44, 0.3);
+        }
+
+        .modal-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .upload-status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        .upload-status.success {
+            background: rgba(92, 140, 76, 0.2);
+            border: 1px solid var(--et-green);
+            color: var(--et-light-green);
+            display: block;
+        }
+
+        .upload-status.error {
+            background: rgba(196, 36, 43, 0.2);
+            border: 1px solid var(--et-red);
+            color: #ff6b6b;
+            display: block;
         }
     </style>
 </head>
 <body>
+    <div class="back-buttons">
+        <a href="/flight-load" class="back-home-btn">
+            ← Back to Flight Load
+        </a>
+        <a href="/" class="back-home-btn">
+            🏠 Home
+        </a>
+    </div>
+
+    <button class="admin-upload-btn" onclick="openUploadModal()">
+        📤 Upload Data
+    </button>
+
     <div class="container">
         <div class="header">
-            <h1>✈️ Route Analysis Dashboard</h1>
-            <p>Outbound Destinations & Inbound Origins Analysis</p>
-        </div>
-
-        <div class="nav-buttons">
-            <a href="/flight-load/menu" class="btn btn-secondary">← Back to Flight Load</a>
-            <a href="/" class="btn btn-secondary">🏠 Home</a>
-        </div>
-
-        <!-- Admin Upload Section -->
-        <div class="upload-section">
-            <h2>📤 Admin: Upload Route Analysis Data</h2>
-            <div class="file-input-wrapper">
-                <input type="file" id="excelFile" accept=".xlsx,.xls">
-                <button class="upload-btn" id="uploadBtn" onclick="uploadFile()">Upload & Analyze</button>
-            </div>
-            <div class="message" id="uploadMessage"></div>
-        </div>
-
-        <!-- Week Selection -->
-        <div class="week-selection" id="weekSelection" style="display: none;">
-            <h3>📅 Select Week(s) for Analysis</h3>
-            <div class="week-selectors">
-                <div class="selector-group">
-                    <label for="weekSelect">Select Week:</label>
-                    <select id="weekSelect" onchange="loadWeekData()">
-                        <option value="">-- Select Week --</option>
-                    </select>
+            <div class="header-logo">
+                <div class="logo-stripes">
+                    <div class="logo-stripe stripe-green"></div>
+                    <div class="logo-stripe stripe-yellow"></div>
+                    <div class="logo-stripe stripe-red"></div>
                 </div>
-                <div class="selector-group">
-                    <label for="compareWeekSelect">Compare With (Optional):</label>
-                    <select id="compareWeekSelect" onchange="loadComparisonData()">
-                        <option value="">-- No Comparison --</option>
-                    </select>
+                <div>
+                    <h1>Route Analysis Dashboard</h1>
+                    <div class="subtitle">Weekly Passenger Traffic by Route</div>
+                </div>
+                <div class="logo-stripes">
+                    <div class="logo-stripe stripe-red"></div>
+                    <div class="logo-stripe stripe-yellow"></div>
+                    <div class="logo-stripe stripe-green"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Metrics -->
-        <div class="metrics-grid" id="metricsGrid" style="display: none;">
-            <!-- Metrics will be populated by JavaScript -->
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Loading route analysis data...</p>
         </div>
 
-        <!-- Charts -->
-        <div class="charts-grid" id="chartsGrid" style="display: none;">
-            <!-- Charts will be populated by JavaScript -->
+        <div id="error" class="error-message" style="display: none;">
+            <h3>⚠️ No Data Available</h3>
+            <p>Please upload a route analysis Excel file to view the dashboard.</p>
+            <button class="modal-btn primary" onclick="openUploadModal()" style="margin-top: 20px; width: auto;">
+                Upload Data Now
+            </button>
         </div>
 
-        <div class="loading" id="loadingIndicator" style="display: none;">
-            ⏳ Processing data...
-        </div>
+        <div id="dashboard" style="display: none;">
+            <!-- Metrics Cards -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total Routes</div>
+                    <div class="metric-value" id="totalRoutes">-</div>
+                    <div class="metric-subtext">Active destinations</div>
+                </div>
 
-        <div class="no-data" id="noDataMessage" style="display: none;">
-            <h3>No Data Available</h3>
-            <p>Please upload an Excel file to begin analysis.</p>
+                <div class="metric-card">
+                    <div class="metric-label">Total Passengers</div>
+                    <div class="metric-value" id="totalPassengers">-</div>
+                    <div class="metric-subtext">Current week</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Previous Week</div>
+                    <div class="metric-value" id="previousWeek">-</div>
+                    <div class="metric-subtext">Comparison baseline</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Week-over-Week</div>
+                    <div class="metric-value" id="weekChange">-</div>
+                    <div class="metric-change" id="weekChangePercent">-</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Top Route</div>
+                    <div class="metric-value" id="topRoute">-</div>
+                    <div class="metric-subtext" id="topRoutePassengers">-</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Busiest Day</div>
+                    <div class="metric-value" id="busiestDay">-</div>
+                    <div class="metric-subtext" id="busiestDayPassengers">-</div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <span class="chart-icon"></span>
+                        Top 10 Routes by Passengers
+                    </div>
+                    <canvas id="topRoutesChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <span class="chart-icon"></span>
+                        Daily Passenger Trend
+                    </div>
+                    <canvas id="dailyTrendChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <span class="chart-icon"></span>
+                        Week-over-Week Comparison
+                    </div>
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <span class="chart-icon"></span>
+                        Passenger Distribution
+                    </div>
+                    <canvas id="distributionChart"></canvas>
+                </div>
+
+                <div class="chart-container" style="grid-column: 1 / -1;">
+                    <div class="chart-title">
+                        <span class="chart-icon"></span>
+                        Top 10 Routes by Growth Rate
+                    </div>
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Upload Route Analysis Data</div>
+            
+            <div class="file-upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">📊</div>
+                <div class="upload-text">Click to browse or drag & drop</div>
+                <div class="upload-subtext">Excel files (.xlsx, .xls) only</div>
+            </div>
+
+            <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+            
+            <div id="selectedFile" class="selected-file">
+                <strong>Selected file:</strong> <span id="fileName"></span>
+            </div>
+
+            <div id="uploadStatus" class="upload-status"></div>
+
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" onclick="closeUploadModal()">Cancel</button>
+                <button class="modal-btn primary" id="uploadBtn" onclick="uploadFile()" disabled>Upload</button>
+            </div>
         </div>
     </div>
 
     <script>
-        let currentWeekId = null;
-        let compareWeekId = null;
+        let selectedFile = null;
         let charts = {};
 
-        // Load available weeks on page load
-        window.addEventListener('DOMContentLoaded', loadAvailableWeeks);
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+        });
 
-        async function loadAvailableWeeks() {
+        async function loadDashboardData() {
             try {
-                const response = await fetch('/flight-load/route-analysis/weeks');
-                const data = await response.json();
-
-                if (data.success && data.weeks.length > 0) {
-                    populateWeekSelectors(data.weeks);
-                    document.getElementById('weekSelection').style.display = 'block';
-                    document.getElementById('noDataMessage').style.display = 'none';
-                    
-                    // Auto-select most recent week
-                    currentWeekId = data.weeks[0].id;
-                    document.getElementById('weekSelect').value = currentWeekId;
-                    loadWeekData();
-                } else {
-                    document.getElementById('noDataMessage').style.display = 'block';
+                const response = await fetch('/route-analysis/data');
+                
+                if (!response.ok) {
+                    throw new Error('No data available');
                 }
+
+                const data = await response.json();
+                
+                // Hide loading, show dashboard
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+
+                // Update metrics
+                updateMetrics(data.summary);
+
+                // Load charts using requestAnimationFrame for proper rendering
+                requestAnimationFrame(() => {
+                    loadCharts();
+                });
+
             } catch (error) {
-                console.error('Error loading weeks:', error);
-                document.getElementById('noDataMessage').style.display = 'block';
+                console.error('Error loading data:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
             }
         }
 
-        function populateWeekSelectors(weeks) {
-            const weekSelect = document.getElementById('weekSelect');
-            const compareSelect = document.getElementById('compareWeekSelect');
-
-            weekSelect.innerHTML = '<option value="">-- Select Week --</option>';
-            compareSelect.innerHTML = '<option value="">-- No Comparison --</option>';
-
-            weeks.forEach(week => {
-                const option1 = document.createElement('option');
-                option1.value = week.id;
-                option1.textContent = `${week.name} (${week.total_passengers} pax)`;
-                weekSelect.appendChild(option1);
-
-                const option2 = document.createElement('option');
-                option2.value = week.id;
-                option2.textContent = `${week.name} (${week.total_passengers} pax)`;
-                compareSelect.appendChild(option2);
-            });
+        function updateMetrics(summary) {
+            document.getElementById('totalRoutes').textContent = summary.total_routes.toLocaleString();
+            document.getElementById('totalPassengers').textContent = summary.total_passengers.toLocaleString();
+            document.getElementById('previousWeek').textContent = summary.previous_week_passengers.toLocaleString();
+            
+            const variance = summary.variance;
+            const variancePct = summary.variance_pct;
+            
+            document.getElementById('weekChange').textContent = variance >= 0 ? `+${variance.toLocaleString()}` : variance.toLocaleString();
+            
+            const changeElement = document.getElementById('weekChangePercent');
+            changeElement.textContent = `${variancePct >= 0 ? '+' : ''}${variancePct}%`;
+            changeElement.className = 'metric-change ' + (variancePct >= 0 ? 'positive' : 'negative');
+            
+            document.getElementById('topRoute').textContent = summary.top_route;
+            document.getElementById('topRoutePassengers').textContent = `${summary.top_route_passengers.toLocaleString()} passengers`;
+            
+            document.getElementById('busiestDay').textContent = summary.busiest_day;
+            document.getElementById('busiestDayPassengers').textContent = `${summary.busiest_day_passengers.toLocaleString()} passengers`;
         }
+
+        async function loadCharts() {
+            // Destroy existing charts
+            Object.values(charts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+            charts = {};
+
+            try {
+                // Load all chart data
+                const [topRoutes, dailyTrend, growth, distribution] = await Promise.all([
+                    fetch('/route-analysis/charts/top-routes').then(r => r.json()),
+                    fetch('/route-analysis/charts/daily-trend').then(r => r.json()),
+                    fetch('/route-analysis/charts/growth').then(r => r.json()),
+                    fetch('/route-analysis/charts/distribution').then(r => r.json())
+                ]);
+
+                // Top Routes Chart
+                const topRoutesCtx = document.getElementById('topRoutesChart');
+                if (topRoutesCtx) {
+                    const existingChart = Chart.getChart(topRoutesCtx);
+                    if (existingChart) existingChart.destroy();
+                    
+                    charts.topRoutes = new Chart(topRoutesCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: topRoutes.labels,
+                            datasets: [{
+                                label: 'Current Week',
+                                data: topRoutes.data,
+                                backgroundColor: 'rgba(92, 140, 76, 0.8)',
+                                borderColor: 'rgba(92, 140, 76, 1)',
+                                borderWidth: 2
+                            }, {
+                                label: 'Previous Week',
+                                data: topRoutes.previous_week,
+                                backgroundColor: 'rgba(252, 204, 44, 0.5)',
+                                borderColor: 'rgba(252, 204, 44, 1)',
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    labels: { color: 'white', font: { size: 12, weight: '600' } }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: 'white',
+                                    bodyColor: 'white',
+                                    borderColor: 'rgba(252, 204, 44, 0.5)',
+                                    borderWidth: 1
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                                },
+                                x: {
+                                    ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                    grid: { display: false }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Daily Trend Chart
+                const dailyTrendCtx = document.getElementById('dailyTrendChart');
+                if (dailyTrendCtx) {
+                    const existingChart = Chart.getChart(dailyTrendCtx);
+                    if (existingChart) existingChart.destroy();
+                    
+                    charts.dailyTrend = new Chart(dailyTrendCtx, {
+                        type: 'line',
+                        data: {
+                            labels: dailyTrend.labels,
+                            datasets: [{
+                                label: 'Daily Passengers',
+                                data: dailyTrend.data,
+                                borderColor: 'rgba(252, 204, 44, 1)',
+                                backgroundColor: 'rgba(252, 204, 44, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 5,
+                                pointBackgroundColor: 'rgba(252, 204, 44, 1)',
+                                pointBorderColor: 'white',
+                                pointBorderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    labels: { color: 'white', font: { size: 12, weight: '600' } }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: 'white',
+                                    bodyColor: 'white',
+                                    borderColor: 'rgba(252, 204, 44, 0.5)',
+                                    borderWidth: 1
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                                },
+                                x: {
+                                    ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                    grid: { display: false }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Comparison Chart (same as top routes but different view)
+                const comparisonCtx = document.getElementById('comparisonChart');
+                if (comparisonCtx) {
+                    const existingChart = Chart.getChart(comparisonCtx);
+                    if (existingChart) existingChart.destroy();
+                    
+                    charts.comparison = new Chart(comparisonCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: topRoutes.labels.slice(0, 5),
+                            datasets: [{
+                                label: 'Current Week',
+                                data: topRoutes.data.slice(0, 5),
+                                backgroundColor: 'rgba(92, 140, 76, 0.8)',
+                                borderColor: 'rgba(92, 140, 76, 1)',
+                                borderWidth: 2
+                            }, {
+                                label: 'Previous Week',
+                                data: topRoutes.previous_week.slice(0, 5),
+                                backgroundColor: 'rgba(196, 36, 43, 0.6)',
+                                borderColor: 'rgba(196, 36, 43, 1)',
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    labels: { color: 'white', font: { size: 12, weight: '600' } }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: 'white',
+                                    bodyColor: 'white',
+                                    borderColor: 'rgba(252, 204, 44, 0.5)',
+                                    borderWidth: 1
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                                },
+                                x: {
+                                    ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                    grid: { display: false }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Distribution Chart
+                const distributionCtx = document.getElementById('distributionChart');
+                if (distributionCtx) {
+                    const existingChart = Chart.getChart(distributionCtx);
+                    if (existingChart) existingChart.destroy();
+                    
+                    charts.distribution = new Chart(distributionCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: distribution.labels,
+                            datasets: [{
+                                data: distribution.data,
+                                backgroundColor: [
+                                    'rgba(92, 140, 76, 0.8)',
+                                    'rgba(252, 204, 44, 0.8)',
+                                    'rgba(196, 36, 43, 0.8)',
+                                    'rgba(92, 140, 76, 0.6)',
+                                    'rgba(252, 204, 44, 0.6)',
+                                    'rgba(196, 36, 43, 0.6)',
+                                    'rgba(92, 140, 76, 0.4)',
+                                    'rgba(252, 204, 44, 0.4)',
+                                    'rgba(196, 36, 43, 0.4)',
+                                    'rgba(92, 140, 76, 0.3)',
+                                    'rgba(255, 255, 255, 0.3)'
+                                ],
+                                borderColor: 'white',
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                    labels: { 
+                                        color: 'white', 
+                                        font: { size: 11, weight: '600' },
+                                        padding: 10
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: 'white',
+                                    bodyColor: 'white',
+                                    borderColor: 'rgba(252, 204, 44, 0.5)',
+                                    borderWidth: 1,
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.parsed || 0;
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = ((value / total) * 100).toFixed(1);
+                                            return `${label}: ${value.toLocaleString()} (${percentage}%)`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Growth Chart
+                const growthCtx = document.getElementById('growthChart');
+                if (growthCtx) {
+                    const existingChart = Chart.getChart(growthCtx);
+                    if (existingChart) existingChart.destroy();
+                    
+                    charts.growth = new Chart(growthCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: growth.labels,
+                            datasets: [{
+                                label: 'Growth Rate (%)',
+                                data: growth.data,
+                                backgroundColor: growth.data.map(v => v >= 0 ? 'rgba(92, 140, 76, 0.8)' : 'rgba(196, 36, 43, 0.8)'),
+                                borderColor: growth.data.map(v => v >= 0 ? 'rgba(92, 140, 76, 1)' : 'rgba(196, 36, 43, 1)'),
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    labels: { color: 'white', font: { size: 12, weight: '600' } }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: 'white',
+                                    bodyColor: 'white',
+                                    borderColor: 'rgba(252, 204, 44, 0.5)',
+                                    borderWidth: 1,
+                                    callbacks: {
+                                        label: function(context) {
+                                            const index = context.dataIndex;
+                                            const variance = growth.variance[index];
+                                            return [
+                                                `Growth: ${context.parsed.x}%`,
+                                                `Variance: ${variance >= 0 ? '+' : ''}${variance} passengers`
+                                            ];
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: { 
+                                        color: 'rgba(255, 255, 255, 0.7)',
+                                        callback: function(value) {
+                                            return value + '%';
+                                        }
+                                    },
+                                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                                },
+                                y: {
+                                    ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                    grid: { display: false }
+                                }
+                            }
+                        }
+                    });
+                }
+
+            } catch (error) {
+                console.error('Error loading charts:', error);
+            }
+        }
+
+        // Upload Modal Functions
+        function openUploadModal() {
+            // Check if admin is logged in
+            fetch('/admin/check')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.logged_in) {
+                        document.getElementById('uploadModal').classList.add('active');
+                    } else {
+                        // Redirect to admin login
+                        window.location.href = '/admin.html';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking admin status:', error);
+                    window.location.href = '/admin.html';
+                });
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+            selectedFile = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('selectedFile').classList.remove('active');
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('uploadStatus').className = 'upload-status';
+            document.getElementById('uploadStatus').textContent = '';
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('selectedFile').classList.add('active');
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        }
+
+        // Drag and drop
+        const uploadArea = document.getElementById('uploadArea');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const file = e.dataTransfer.files[0];
+            if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+                selectedFile = file;
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('selectedFile').classList.add('active');
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        });
 
         async function uploadFile() {
-            const fileInput = document.getElementById('excelFile');
-            const uploadBtn = document.getElementById('uploadBtn');
-            const message = document.getElementById('uploadMessage');
-
-            if (!fileInput.files.length) {
-                showMessage('Please select a file', 'error');
-                return;
-            }
+            if (!selectedFile) return;
 
             const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+            formData.append('file', selectedFile);
 
+            const uploadBtn = document.getElementById('uploadBtn');
+            const statusDiv = document.getElementById('uploadStatus');
+            
             uploadBtn.disabled = true;
-            uploadBtn.textContent = 'Processing...';
-            document.getElementById('loadingIndicator').style.display = 'block';
+            uploadBtn.textContent = 'Uploading...';
+            statusDiv.className = 'upload-status';
+            statusDiv.textContent = '';
 
             try {
-                const response = await fetch('/flight-load/route-analysis/upload', {
+                const response = await fetch('/route-analysis/upload', {
                     method: 'POST',
                     body: formData
                 });
 
-                const data = await response.json();
+                const result = await response.json();
 
-                if (data.success) {
-                    showMessage(`✅ ${data.message} (${data.processing_time}s)`, 'success');
-                    await loadAvailableWeeks();
+                if (response.ok) {
+                    statusDiv.className = 'upload-status success';
+                    statusDiv.textContent = '✓ ' + result.message;
+                    
+                    setTimeout(() => {
+                        closeUploadModal();
+                        location.reload();
+                    }, 1500);
                 } else {
-                    showMessage(`❌ Error: ${data.error}`, 'error');
+                    throw new Error(result.error || 'Upload failed');
                 }
             } catch (error) {
-                showMessage(`❌ Error uploading file: ${error.message}`, 'error');
-            } finally {
+                console.error('Upload error:', error);
+                statusDiv.className = 'upload-status error';
+                statusDiv.textContent = '✗ ' + error.message;
                 uploadBtn.disabled = false;
-                uploadBtn.textContent = 'Upload & Analyze';
-                document.getElementById('loadingIndicator').style.display = 'none';
+                uploadBtn.textContent = 'Upload';
             }
-        }
-
-        async function loadWeekData() {
-            const weekId = document.getElementById('weekSelect').value;
-            if (!weekId) return;
-
-            currentWeekId = weekId;
-
-            try {
-                const response = await fetch(`/flight-load/route-analysis/data?week_id=${weekId}`);
-                const data = await response.json();
-
-                if (data.success) {
-                    displayMetrics(data.summary);
-                    await loadCharts(weekId);
-                    document.getElementById('metricsGrid').style.display = 'grid';
-                    document.getElementById('chartsGrid').style.display = 'grid';
-                }
-            } catch (error) {
-                console.error('Error loading week data:', error);
-                showMessage(`❌ Error loading data: ${error.message}`, 'error');
-            }
-        }
-
-        function displayMetrics(summary) {
-            const metricsGrid = document.getElementById('metricsGrid');
-            metricsGrid.innerHTML = `
-                <div class="metric-card">
-                    <div class="metric-label">Selected Week</div>
-                    <div class="metric-value">${summary.week}</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Total Passengers</div>
-                    <div class="metric-value">${summary.total_passengers.toLocaleString()}</div>
-                    <div class="metric-subtext">${summary.total_routes} routes</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Outbound (Destinations)</div>
-                    <div class="metric-value">${summary.outbound.total_passengers.toLocaleString()}</div>
-                    <div class="metric-subtext">${summary.outbound.total_routes} routes</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Inbound (Origins)</div>
-                    <div class="metric-value">${summary.inbound.total_passengers.toLocaleString()}</div>
-                    <div class="metric-subtext">${summary.inbound.total_routes} routes</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Top Destination</div>
-                    <div class="metric-value" style="font-size: 1.2em;">${summary.outbound.top_destination ? summary.outbound.top_destination.display_name : 'N/A'}</div>
-                    <div class="metric-subtext">${summary.outbound.top_destination ? summary.outbound.top_destination.passengers.toLocaleString() + ' passengers' : ''}</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Top Origin</div>
-                    <div class="metric-value" style="font-size: 1.2em;">${summary.inbound.top_origin ? summary.inbound.top_origin.display_name : 'N/A'}</div>
-                    <div class="metric-subtext">${summary.inbound.top_origin ? summary.inbound.top_origin.passengers.toLocaleString() + ' passengers' : ''}</div>
-                </div>
-            `;
-        }
-
-        async function loadCharts(weekId) {
-            const chartsGrid = document.getElementById('chartsGrid');
-            chartsGrid.innerHTML = `
-                <div class="chart-card">
-                    <h3>Top 10 Destinations (Outbound)</h3>
-                    <div class="chart-container"><canvas id="topDestinationsChart"></canvas></div>
-                </div>
-                <div class="chart-card">
-                    <h3>Top 10 Origins (Inbound)</h3>
-                    <div class="chart-container"><canvas id="topOriginsChart"></canvas></div>
-                </div>
-                <div class="chart-card">
-                    <h3>Outbound vs Inbound Traffic</h3>
-                    <div class="chart-container"><canvas id="outboundVsInboundChart"></canvas></div>
-                </div>
-                <div class="chart-card">
-                    <h3>Daily Passenger Trend</h3>
-                    <div class="chart-container"><canvas id="dailyTrendChart"></canvas></div>
-                </div>
-            `;
-
-            // Destroy old charts
-            Object.values(charts).forEach(chart => chart.destroy());
-            charts = {};
-
-            // Load chart data
-            await Promise.all([
-                createTopDestinationsChart(weekId),
-                createTopOriginsChart(weekId),
-                createOutboundVsInboundChart(weekId),
-                createDailyTrendChart(weekId)
-            ]);
-        }
-
-        async function createTopDestinationsChart(weekId) {
-            const response = await fetch(`/flight-load/route-analysis/charts/top-destinations?week_id=${weekId}&limit=10`);
-            const data = await response.json();
-
-            if (data.success) {
-                const ctx = document.getElementById('topDestinationsChart').getContext('2d');
-                charts.topDestinations = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.labels,
-                        datasets: [{
-                            label: 'Passengers',
-                            data: data.datasets[0].data,
-                            backgroundColor: 'rgba(7, 137, 48, 0.8)',
-                            borderColor: 'rgba(7, 137, 48, 1)',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: (context) => `${context.parsed.y.toLocaleString()} passengers`
-                                }
-                            }
-                        },
-                        scales: {
-                            y: { beginAtZero: true }
-                        }
-                    }
-                });
-            }
-        }
-
-        async function createTopOriginsChart(weekId) {
-            const response = await fetch(`/flight-load/route-analysis/charts/top-origins?week_id=${weekId}&limit=10`);
-            const data = await response.json();
-
-            if (data.success) {
-                const ctx = document.getElementById('topOriginsChart').getContext('2d');
-                charts.topOrigins = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.labels,
-                        datasets: [{
-                            label: 'Passengers',
-                            data: data.datasets[0].data,
-                            backgroundColor: 'rgba(218, 18, 26, 0.8)',
-                            borderColor: 'rgba(218, 18, 26, 1)',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: (context) => `${context.parsed.y.toLocaleString()} passengers`
-                                }
-                            }
-                        },
-                        scales: {
-                            y: { beginAtZero: true }
-                        }
-                    }
-                });
-            }
-        }
-
-        async function createOutboundVsInboundChart(weekId) {
-            const response = await fetch(`/flight-load/route-analysis/charts/outbound-vs-inbound?week_id=${weekId}`);
-            const data = await response.json();
-
-            if (data.success) {
-                const ctx = document.getElementById('outboundVsInboundChart').getContext('2d');
-                charts.outboundVsInbound = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: data.labels,
-                        datasets: [{
-                            data: data.datasets[0].data,
-                            backgroundColor: [
-                                'rgba(7, 137, 48, 0.8)',
-                                'rgba(218, 18, 26, 0.8)'
-                            ],
-                            borderColor: [
-                                'rgba(7, 137, 48, 1)',
-                                'rgba(218, 18, 26, 1)'
-                            ],
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            tooltip: {
-                                callbacks: {
-                                    label: (context) => `${context.label}: ${context.parsed.toLocaleString()} passengers`
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        async function createDailyTrendChart(weekId) {
-            const response = await fetch(`/flight-load/route-analysis/charts/daily-trend?week_id=${weekId}&direction=both`);
-            const data = await response.json();
-
-            if (data.success) {
-                const ctx = document.getElementById('dailyTrendChart').getContext('2d');
-                charts.dailyTrend = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.labels,
-                        datasets: data.datasets.map((ds, idx) => ({
-                            label: ds.label,
-                            data: ds.data,
-                            borderColor: idx === 0 ? 'rgba(7, 137, 48, 1)' : 'rgba(218, 18, 26, 1)',
-                            backgroundColor: idx === 0 ? 'rgba(7, 137, 48, 0.1)' : 'rgba(218, 18, 26, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4
-                        }))
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            tooltip: {
-                                callbacks: {
-                                    label: (context) => `${context.dataset.label}: ${context.parsed.y.toLocaleString()} passengers`
-                                }
-                            }
-                        },
-                        scales: {
-                            y: { beginAtZero: true }
-                        }
-                    }
-                });
-            }
-        }
-
-        async function loadComparisonData() {
-            const compareWeekId = document.getElementById('compareWeekSelect').value;
-            
-            if (!compareWeekId || !currentWeekId) return;
-
-            // Add comparison charts
-            const chartsGrid = document.getElementById('chartsGrid');
-            
-            // Check if comparison charts already exist
-            if (!document.getElementById('weekComparisonOutboundChart')) {
-                chartsGrid.innerHTML += `
-                    <div class="chart-card">
-                        <h3>Week Comparison - Outbound</h3>
-                        <div class="chart-container"><canvas id="weekComparisonOutboundChart"></canvas></div>
-                    </div>
-                    <div class="chart-card">
-                        <h3>Week Comparison - Inbound</h3>
-                        <div class="chart-container"><canvas id="weekComparisonInboundChart"></canvas></div>
-                    </div>
-                    <div class="chart-card">
-                        <h3>Growth Rates - Outbound</h3>
-                        <div class="chart-container"><canvas id="growthRatesOutboundChart"></canvas></div>
-                    </div>
-                    <div class="chart-card">
-                        <h3>Growth Rates - Inbound</h3>
-                        <div class="chart-container"><canvas id="growthRatesInboundChart"></canvas></div>
-                    </div>
-                `;
-            }
-
-            await Promise.all([
-                createWeekComparisonChart(currentWeekId, compareWeekId, 'outbound'),
-                createWeekComparisonChart(currentWeekId, compareWeekId, 'inbound'),
-                createGrowthRatesChart(currentWeekId, compareWeekId, 'outbound'),
-                createGrowthRatesChart(currentWeekId, compareWeekId, 'inbound')
-            ]);
-        }
-
-        async function createWeekComparisonChart(week1Id, week2Id, direction) {
-            const response = await fetch(`/flight-load/route-analysis/charts/week-comparison?week1_id=${week1Id}&week2_id=${week2Id}&direction=${direction}&limit=10`);
-            const data = await response.json();
-
-            if (data.success) {
-                const canvasId = direction === 'outbound' ? 'weekComparisonOutboundChart' : 'weekComparisonInboundChart';
-                const ctx = document.getElementById(canvasId).getContext('2d');
-                
-                if (charts[canvasId]) charts[canvasId].destroy();
-                
-                charts[canvasId] = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.labels,
-                        datasets: data.datasets.map((ds, idx) => ({
-                            label: ds.label,
-                            data: ds.data,
-                            backgroundColor: idx === 0 ? 'rgba(7, 137, 48, 0.8)' : 'rgba(218, 18, 26, 0.8)',
-                            borderColor: idx === 0 ? 'rgba(7, 137, 48, 1)' : 'rgba(218, 18, 26, 1)',
-                            borderWidth: 2
-                        }))
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            tooltip: {
-                                callbacks: {
-                                    label: (context) => `${context.dataset.label}: ${context.parsed.y.toLocaleString()} passengers`
-                                }
-                            }
-                        },
-                        scales: {
-                            y: { beginAtZero: true }
-                        }
-                    }
-                });
-            }
-        }
-
-        async function createGrowthRatesChart(week1Id, week2Id, direction) {
-            const response = await fetch(`/flight-load/route-analysis/charts/growth-rates?week1_id=${week1Id}&week2_id=${week2Id}&direction=${direction}&limit=10`);
-            const data = await response.json();
-
-            if (data.success) {
-                const canvasId = direction === 'outbound' ? 'growthRatesOutboundChart' : 'growthRatesInboundChart';
-                const ctx = document.getElementById(canvasId).getContext('2d');
-                
-                if (charts[canvasId]) charts[canvasId].destroy();
-                
-                // Color bars based on positive/negative growth
-                const backgroundColors = data.datasets[0].data.map(val => 
-                    val >= 0 ? 'rgba(7, 137, 48, 0.8)' : 'rgba(218, 18, 26, 0.8)'
-                );
-                const borderColors = data.datasets[0].data.map(val => 
-                    val >= 0 ? 'rgba(7, 137, 48, 1)' : 'rgba(218, 18, 26, 1)'
-                );
-                
-                charts[canvasId] = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.labels,
-                        datasets: [{
-                            label: 'Growth Rate (%)',
-                            data: data.datasets[0].data,
-                            backgroundColor: backgroundColors,
-                            borderColor: borderColors,
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        indexAxis: 'y',
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: (context) => `${context.parsed.x.toFixed(2)}% growth`
-                                }
-                            }
-                        },
-                        scales: {
-                            x: { 
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: (value) => value + '%'
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        function showMessage(text, type) {
-            const message = document.getElementById('uploadMessage');
-            message.textContent = text;
-            message.className = `message ${type}`;
-            message.style.display = 'block';
-            
-            setTimeout(() => {
-                message.style.display = 'none';
-            }, 5000);
         }
     </script>
 </body>
 </html>
+
