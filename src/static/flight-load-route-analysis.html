@@ -462,6 +462,7 @@
             uploadBtn.disabled = true;
             uploadBtn.textContent = 'Processing...';
             document.getElementById('loadingIndicator').style.display = 'block';
+            showMessage('⏳ Processing all sheets... This may take 60-90 seconds for 134 sheets. Please wait...', 'info');
 
             try {
                 const response = await fetch('/flight-load/route-analysis/upload', {
