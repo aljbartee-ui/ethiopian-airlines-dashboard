@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from flask import Flask, send_from_directory, session, request, jsonify, redirect
 from src.models.user import db
 from src.models.sales import SalesData, AdminUser
+from src.models.route_analysis import RouteAnalysisWeek, RouteAnalysisUpload
 from src.routes.user import user_bp
 from src.routes.admin_fixed import admin_bp
 from src.routes.sales_working import sales_bp
@@ -17,7 +18,6 @@ app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'sta
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# Register blueprints with correct URL prefixes
 app.register_blueprint(user_bp, url_prefix='/api')
 app.register_blueprint(admin_bp, url_prefix='/api')
 app.register_blueprint(sales_bp, url_prefix='/api')
@@ -30,13 +30,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(os.path.dirnam
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
-# Create database tables
+# Create all database tables including route analysis tables
 with app.app_context():
-    try:
-        db.create_all()
-        print("✅ Database tables created successfully")
-    except Exception as e:
-        print(f"❌ Error creating database tables: {e}")
+    db.create_all()
+    print("✅ Database tables created successfully")
 
 @app.route('/')
 def home():
@@ -107,6 +104,14 @@ def flight_load_route_analysis():
     if static_folder_path is None:
         return "Static folder not configured", 404
     return send_from_directory(static_folder_path, 'flight-load-route-analysis.html')
+
+@app.route('/flight-load/menu')
+def flight_load_menu():
+    """Serve the flight load menu page (alternative route)"""
+    static_folder_path = app.static_folder
+    if static_folder_path is None:
+        return "Static folder not configured", 404
+    return send_from_directory(static_folder_path, 'flight-load-menu.html')
 
 @app.route('/admin')
 def admin_panel():
