@@ -95,4 +95,3 @@ class RouteAnalysisUpload(db.Model):
     
     def __repr__(self):
         return f'<RouteAnalysisUpload {self.filename} - {self.total_weeks_processed} weeks>'
-
