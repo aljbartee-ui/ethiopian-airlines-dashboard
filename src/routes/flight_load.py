@@ -5,7 +5,7 @@ import os
 import time
 from datetime import datetime
 from src.models.sales import SalesData
-from src.database import db
+from src.models.sales import db
 
 flight_load_bp = Blueprint('flight_load', __name__)
 
