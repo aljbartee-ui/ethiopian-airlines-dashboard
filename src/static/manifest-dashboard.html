@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Analysis - Daily Manifest | Ethiopian Airlines</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0C7C59 0%, #1E5631 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #0C7C59 0%, #FCDD09 33%, #DA121A 66%, #0C7C59 100%);
+        }
+
+        h1 {
+            color: #0C7C59;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            padding: 12px 24px;
+            background: #0C7C59;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            background: #0A5F43;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(12,124,89,0.3);
+        }
+
+        .upload-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .upload-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .upload-box {
+            border: 2px dashed #0C7C59;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s;
+        }
+
+        .upload-box:hover {
+            border-color: #FCDD09;
+            background: #fffef5;
+        }
+
+        .upload-box h3 {
+            color: #0C7C59;
+            margin-bottom: 15px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+
+        .upload-btn {
+            margin-top: 15px;
+            padding: 12px 30px;
+            background: #0C7C59;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-btn:hover {
+            background: #0A5F43;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(12,124,89,0.3);
+        }
+
+        .upload-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .chart-card h3 {
+            color: #0C7C59;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+        }
+
+        .filter-bar {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .filter-bar select {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .upload-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .back-button {
+                position: static;
+                display: block;
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Route Analysis - Daily Manifest</h1>
+            <p class="subtitle">Upload daily flight manifests to track passenger origins and destinations</p>
+            <a href="/flight-load/menu" class="back-button">← Back to Flight Load</a>
+        </div>
+
+        <div class="upload-section">
+            <h2 style="color: #0C7C59; margin-bottom: 20px;">📤 Upload Daily Manifests</h2>
+            <div class="upload-grid">
+                <!-- Inbound Manifest -->
+                <div class="upload-box">
+                    <h3>✈️ Inbound Flight (ET 620)</h3>
+                    <p style="color: #666; margin-bottom: 15px; font-size: 14px;">
+                        Paste manifest showing passenger origins
+                    </p>
+                    <textarea id="inboundManifest" placeholder="Paste inbound manifest here..."></textarea>
+                    <button class="upload-btn" onclick="uploadManifest('INBOUND')">Upload Inbound</button>
+                    <div id="inboundStatus" class="status-message"></div>
+                </div>
+
+                <!-- Outbound Manifest -->
+                <div class="upload-box">
+                    <h3>✈️ Outbound Flight (ET 621)</h3>
+                    <p style="color: #666; margin-bottom: 15px; font-size: 14px;">
+                        Paste manifest showing passenger destinations
+                    </p>
+                    <textarea id="outboundManifest" placeholder="Paste outbound manifest here..."></textarea>
+                    <button class="upload-btn" onclick="uploadManifest('OUTBOUND')">Upload Outbound</button>
+                    <div id="outboundStatus" class="status-message"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <label for="periodFilter">Period:</label>
+            <select id="periodFilter" onchange="loadCharts()">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="365">Last year</option>
+            </select>
+
+            <button class="upload-btn" onclick="loadCharts()" style="margin: 0;">🔄 Refresh Charts</button>
+        </div>
+
+        <div class="charts-section">
+            <div class="chart-card">
+                <h3>🌍 Top Origins (Inbound)</h3>
+                <div class="chart-container">
+                    <canvas id="topOriginsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>🌍 Top Destinations (Outbound)</h3>
+                <div class="chart-container">
+                    <canvas id="topDestinationsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card" style="grid-column: 1 / -1;">
+                <h3>📈 Daily Passenger Trend</h3>
+                <div class="chart-container">
+                    <canvas id="dailyTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let charts = {};
+
+        async function uploadManifest(direction) {
+            const textareaId = direction === 'INBOUND' ? 'inboundManifest' : 'outboundManifest';
+            const statusId = direction === 'INBOUND' ? 'inboundStatus' : 'outboundStatus';
+            const manifestText = document.getElementById(textareaId).value;
+            const statusEl = document.getElementById(statusId);
+
+            if (!manifestText.trim()) {
+                showStatus(statusEl, 'Please paste manifest text', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/flight-load/manifest/upload', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        manifest_text: manifestText,
+                        direction: direction
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus(statusEl, result.message, 'success');
+                    document.getElementById(textareaId).value = '';
+                    setTimeout(() => loadCharts(), 1000);
+                } else {
+                    showStatus(statusEl, result.error, 'error');
+                }
+            } catch (error) {
+                showStatus(statusEl, 'Upload failed: ' + error.message, 'error');
+            }
+        }
+
+        function showStatus(element, message, type) {
+            element.textContent = message;
+            element.className = `status-message ${type}`;
+            element.style.display = 'block';
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+
+        async function loadCharts() {
+            const days = document.getElementById('periodFilter').value;
+            await loadTopRoutesChart('INBOUND', 'topOriginsChart', days);
+            await loadTopRoutesChart('OUTBOUND', 'topDestinationsChart', days);
+            await loadDailyTrendChart(days);
+        }
+
+        async function loadTopRoutesChart(direction, canvasId, days) {
+            try {
+                const response = await fetch(`/flight-load/manifest/charts/top-routes?direction=${direction}&days=${days}`);
+                const result = await response.json();
+
+                if (!result.success) return;
+
+                const ctx = document.getElementById(canvasId).getContext('2d');
+
+                if (charts[canvasId]) {
+                    charts[canvasId].destroy();
+                }
+
+                const labels = result.routes.map(r => `${r.code} - ${r.city}`);
+                const data = result.routes.map(r => r.passengers);
+
+                charts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Passengers',
+                            data: data,
+                            backgroundColor: 'rgba(12, 124, 89, 0.8)',
+                            borderColor: 'rgba(12, 124, 89, 1)',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {display: false},
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => `${context.parsed.y} passengers`
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {precision: 0}
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading chart:', error);
+            }
+        }
+
+        async function loadDailyTrendChart(days) {
+            try {
+                const response = await fetch(`/flight-load/manifest/charts/daily-trend?days=${days}`);
+                const result = await response.json();
+
+                if (!result.success) return;
+
+                const ctx = document.getElementById('dailyTrendChart').getContext('2d');
+
+                if (charts['dailyTrendChart']) {
+                    charts['dailyTrendChart'].destroy();
+                }
+
+                const labels = result.data.map(d => d.date);
+                const inboundData = result.data.map(d => d.inbound);
+                const outboundData = result.data.map(d => d.outbound);
+
+                charts['dailyTrendChart'] = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Inbound',
+                                data: inboundData,
+                                borderColor: 'rgba(12, 124, 89, 1)',
+                                backgroundColor: 'rgba(12, 124, 89, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            },
+                            {
+                                label: 'Outbound',
+                                data: outboundData,
+                                borderColor: 'rgba(252, 221, 9, 1)',
+                                backgroundColor: 'rgba(252, 221, 9, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {precision: 0}
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading trend chart:', error);
+            }
+        }
+
+        // Load charts on page load
+        window.addEventListener('load', () => loadCharts());
+    </script>
+</body>
+</html>
+
