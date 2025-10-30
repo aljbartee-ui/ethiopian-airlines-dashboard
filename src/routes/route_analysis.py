@@ -699,4 +699,3 @@ def get_daily_trend_chart():
     
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
-
