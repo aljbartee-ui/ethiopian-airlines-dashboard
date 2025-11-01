@@ -28,7 +28,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
@@ -105,8 +105,8 @@
         /* Options Grid */
         .options-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-            gap: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 35px;
             margin-top: 50px;
             animation: slideUp 1s ease;
         }
@@ -121,7 +121,7 @@
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(20px);
             border-radius: 28px;
-            padding: 50px 40px;
+            padding: 45px 35px;
             border: 2px solid rgba(92, 140, 76, 0.2);
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -155,15 +155,15 @@
         }
 
         .option-icon {
-            width: 90px;
-            height: 90px;
+            width: 85px;
+            height: 85px;
             margin: 0 auto 25px;
             border-radius: 20px;
             background: linear-gradient(135deg, var(--et-green), var(--et-yellow));
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem;
+            font-size: 2.8rem;
             box-shadow: 0 8px 30px rgba(92, 140, 76, 0.5);
         }
 
@@ -171,8 +171,12 @@
             background: linear-gradient(135deg, var(--et-yellow), var(--et-red));
         }
 
+        .option-card:nth-child(3) .option-icon {
+            background: linear-gradient(135deg, var(--et-red), var(--et-green));
+        }
+
         .option-title {
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 800;
             color: white;
             margin-bottom: 15px;
@@ -180,7 +184,7 @@
         }
 
         .option-description {
-            font-size: 1.05rem;
+            font-size: 1rem;
             color: rgba(255, 255, 255, 0.7);
             text-align: center;
             line-height: 1.7;
@@ -194,9 +198,9 @@
 
         .option-features li {
             color: rgba(255, 255, 255, 0.6);
-            font-size: 0.95rem;
-            padding: 8px 0;
-            padding-left: 30px;
+            font-size: 0.92rem;
+            padding: 7px 0;
+            padding-left: 28px;
             position: relative;
         }
 
@@ -211,9 +215,9 @@
 
         .option-badge {
             display: inline-block;
-            padding: 8px 20px;
+            padding: 7px 18px;
             border-radius: 50px;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -221,6 +225,12 @@
             background: rgba(92, 140, 76, 0.3);
             border: 2px solid var(--et-green);
             color: var(--et-green);
+        }
+
+        .option-badge.new {
+            background: rgba(252, 204, 44, 0.3);
+            border-color: var(--et-yellow);
+            color: var(--et-yellow);
         }
 
         /* Responsive */
@@ -234,7 +244,7 @@
             }
 
             .option-card {
-                padding: 40px 30px;
+                padding: 35px 25px;
             }
 
             .back-button {
@@ -286,9 +296,9 @@
             <!-- Route Analysis Option -->
             <a href="/flight-load/route-analysis" class="option-card">
                 <div class="option-icon">🌍</div>
-                <div class="option-title">Route Analysis</div>
+                <div class="option-title">Route Analysis (Excel)</div>
                 <div class="option-description">
-                    Analyze weekly passenger traffic by route, track growth trends, and identify top performing destinations.
+                    Analyze weekly passenger traffic by route using Excel files with multiple sheets.
                 </div>
                 <ul class="option-features">
                     <li>Weekly passenger traffic analysis</li>
@@ -298,6 +308,24 @@
                 </ul>
                 <div style="text-align: center;">
                     <span class="option-badge">Active</span>
+                </div>
+            </a>
+
+            <!-- Manifest Dashboard Option (NEW!) -->
+            <a href="/flight-load/manifest-dashboard" class="option-card">
+                <div class="option-icon">📋</div>
+                <div class="option-title">Route Analysis (Manifest)</div>
+                <div class="option-description">
+                    Daily manifest upload for fast route analytics. Upload inbound and outbound manifests to track passenger origins and destinations.
+                </div>
+                <ul class="option-features">
+                    <li>Fast 2-second uploads</li>
+                    <li>Top origins & destinations</li>
+                    <li>Daily passenger trends</li>
+                    <li>Historical data (7-365 days)</li>
+                </ul>
+                <div style="text-align: center;">
+                    <span class="option-badge new">New!</span>
                 </div>
             </a>
         </div>
