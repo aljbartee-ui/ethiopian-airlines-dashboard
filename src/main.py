@@ -11,7 +11,6 @@ from src.routes.route_analysis import route_analysis_bp
 from src.routes.manifest import manifest_bp
 from src.models.user import User
 from src.models.sales import SalesData
-from src.models.flight_load import FlightLoad
 from src.models.route_analysis import RouteAnalysisWeek, RouteAnalysisUpload
 from src.models.manifest import DailyManifest
 import os
