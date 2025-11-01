@@ -10,8 +10,8 @@ from collections import Counter
 from src.models.sales import db
 from src.utils.airport_lookup import get_airport_info
 
-# Import the model (will be added to main models folder)
-# from src.models.manifest import DailyManifest
+# Import the model
+from src.models.manifest import DailyManifest
 
 manifest_bp = Blueprint('manifest', __name__)
 
@@ -317,4 +317,3 @@ def get_daily_trend_chart():
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
-
