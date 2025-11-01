@@ -13,7 +13,7 @@ from src.utils.airport_lookup import get_airport_info
 # Import the model (will be added to main models folder)
 # from src.models.manifest import DailyManifest
 
-manifest_bp = Blueprint('manifest', __name__)
+route_analysis_bp = Blueprint('manifest', __name__)
 
 def parse_manifest_text(manifest_text):
     """
@@ -106,7 +106,7 @@ def parse_manifest_text(manifest_text):
     
     return result
 
-@manifest_bp.route('/upload', methods=['POST'])
+@route_analysis_bp.route('/upload', methods=['POST'])
 def upload_manifest():
     """
     Upload and parse manifest file
@@ -180,7 +180,7 @@ def upload_manifest():
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@manifest_bp.route('/data', methods=['GET'])
+@route_analysis_bp.route('/data', methods=['GET'])
 def get_manifest_data():
     """
     Get manifest data with optional filtering
@@ -218,7 +218,7 @@ def get_manifest_data():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@manifest_bp.route('/charts/top-routes', methods=['GET'])
+@route_analysis_bp.route('/charts/top-routes', methods=['GET'])
 def get_top_routes_chart():
     """
     Get top routes chart data
@@ -266,7 +266,7 @@ def get_top_routes_chart():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@manifest_bp.route('/charts/daily-trend', methods=['GET'])
+@route_analysis_bp.route('/charts/daily-trend', methods=['GET'])
 def get_daily_trend_chart():
     """
     Get daily passenger trend chart data
@@ -317,4 +317,3 @@ def get_daily_trend_chart():
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
-
