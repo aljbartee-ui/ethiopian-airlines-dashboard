@@ -88,4 +88,3 @@ class DailyManifest(db.Model):
     
     def __repr__(self):
         return f'<DailyManifest {self.flight_number} {self.flight_date} {self.direction}>'
-
