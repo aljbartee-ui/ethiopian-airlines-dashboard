@@ -1,99 +1,137 @@
-from flask import Blueprint, request, jsonify, send_from_directory
-from werkzeug.utils import secure_filename
-import openpyxl
-import os
-import time
-from datetime import datetime
+from flask import Blueprint, request, jsonify, session
+from src.models.user import db
 from src.models.sales import SalesData
-from src.models.sales import db
+import openpyxl
+from io import BytesIO
+from datetime import datetime
+from collections import defaultdict
 
 flight_load_bp = Blueprint('flight_load', __name__)
 
-ALLOWED_EXTENSIONS = {'.xlsx', '.xls'}
+def safe_int(value):
+    """Safely convert value to int, handling non-numeric values"""
+    if value is None or value == '':
+        return 0
+    if isinstance(value, (int, float)):
+        return int(value)
+    if isinstance(value, str):
+        # Handle special values like 'X', 'N/A', etc.
+        if value.strip().upper() in ['X', 'N/A', 'NA', '-', '']:
+            return 0
+        try:
+            return int(float(value))
+        except (ValueError, TypeError):
+            return 0
+    return 0
 
-def allowed_file(filename):
-    """Check if file extension is allowed"""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+def safe_float(value):
+    """Safely convert value to float, handling non-numeric values"""
+    if value is None or value == '':
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        # Handle special values like 'X', 'N/A', etc.
+        if value.strip().upper() in ['X', 'N/A', 'NA', '-', '']:
+            return 0.0
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return 0.0
+    return 0.0
 
-def parse_flight_load_excel(filepath):
-    """
-    Parse flight load Excel file and extract data
-    Expected columns: Travel Date, C cap, Y cap, Tot cap, Pax C, Pax Y, Pax, LF C, LF Y, Load Factor
-    """
-    wb = openpyxl.load_workbook(filepath, data_only=True)
-    
-    # Use first sheet
-    ws = wb.worksheets[0]
-    
-    processed_data = {
-        'flight_620': [],  # Inbound
-        'flight_621': []   # Outbound
-    }
-    
-    # Process Flight 620 (columns A-L)
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        if row[1]:  # If Travel Date exists
-            flight_620_data = {
-                'travel_date': str(row[1]) if row[1] else None,
-                'c_cap': row[3] if row[3] is not None else 0,
-                'y_cap': row[4] if row[4] is not None else 0,
-                'tot_cap': row[5] if row[5] is not None else 0,
-                'pax_c': row[6] if row[6] is not None else 0,
-                'pax_y': row[7] if row[7] is not None else 0,
-                'pax': row[8] if row[8] is not None else 0,
-                'lf_c': row[9] if row[9] is not None else 0,
-                'lf_y': row[10] if row[10] is not None else 0,
-                'load_factor': row[11] if row[11] is not None else 0
-            }
-            processed_data['flight_620'].append(flight_620_data)
-    
-    # Process Flight 621 (columns O-AA)
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        if row[15]:  # If Travel Date exists (column P, index 15)
-            flight_621_data = {
-                'travel_date': str(row[15]) if row[15] else None,
-                'c_cap': row[17] if row[17] is not None else 0,
-                'y_cap': row[18] if row[18] is not None else 0,
-                'tot_cap': row[19] if row[19] is not None else 0,
-                'pax_c': row[20] if row[20] is not None else 0,
-                'pax_y': row[21] if row[21] is not None else 0,
-                'pax': row[22] if row[22] is not None else 0,
-                'lf_c': row[23] if row[23] is not None else 0,
-                'lf_y': row[24] if row[24] is not None else 0,
-                'load_factor': row[25] if row[25] is not None else 0
-            }
-            processed_data['flight_621'].append(flight_621_data)
-    
-    wb.close()
-    return processed_data
+def process_flight_load_excel(file_content, filename):
+    """Process Flight Load Excel file and extract LF 620-621 data"""
+    try:
+        # Load workbook with data_only=True to read formula values
+        workbook = openpyxl.load_workbook(BytesIO(file_content), data_only=True)
+        
+        # Get the first sheet (should be LF 620-621)
+        if not workbook.sheetnames:
+            raise ValueError("No sheets found in Excel file")
+        
+        # Use first sheet
+        sheet = workbook[workbook.sheetnames[0]]
+        print(f"Processing sheet: {workbook.sheetnames[0]}")
+        
+        processed_data = {
+            'inbound': [],  # Flight 620: ADD to KWI
+            'outbound': []  # Flight 621: KWI to ADD
+        }
+        
+        # Process inbound flights (columns A to L)
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            if row[0]:  # If flight number exists
+                inbound_record = {
+                    'flight_no': str(row[0]),
+                    'travel_date': row[1].strftime('%Y-%m-%d') if isinstance(row[1], datetime) else str(row[1]),
+                    'day': str(row[2]) if row[2] else '',
+                    'c_cap': safe_int(row[3]),  # Business capacity
+                    'y_cap': safe_int(row[4]),  # Economy capacity
+                    'tot_cap': safe_int(row[5]),  # Total capacity
+                    'pax_c': safe_int(row[6]),  # Business passengers
+                    'pax_y': safe_int(row[7]),  # Economy passengers
+                    'pax': safe_int(row[8]),  # Total passengers
+                    'lf_c': safe_float(row[9]),  # Business load factor
+                    'lf_y': safe_float(row[10]),  # Economy load factor
+                    'lf': safe_float(row[11])  # Total load factor
+                }
+                processed_data['inbound'].append(inbound_record)
+        
+        # Process outbound flights (columns O to AA, indices 14 to 26)
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            if len(row) > 14 and row[14]:  # If outbound flight number exists
+                outbound_record = {
+                    'flight_no': str(row[14]),
+                    'travel_date': row[15].strftime('%Y-%m-%d') if isinstance(row[15], datetime) else str(row[15]),
+                    'day': str(row[16]) if row[16] else '',
+                    'c_cap': safe_int(row[17]),
+                    'y_cap': safe_int(row[18]),
+                    'tot_cap': safe_int(row[19]),
+                    'pax_c': safe_int(row[20]),
+                    'pax_y': safe_int(row[21]),
+                    'pax': safe_int(row[22]),
+                    'lf_c': safe_float(row[23]),
+                    'lf_y': safe_float(row[24]),
+                    'lf': safe_float(row[25])
+                }
+                processed_data['outbound'].append(outbound_record)
+        
+        return processed_data
+        
+    except Exception as e:
+        print(f"Error processing flight load Excel file: {e}")
+        raise e
 
 @flight_load_bp.route('/upload', methods=['POST'])
 def upload_flight_load():
-    """Handle flight load Excel file upload"""
+    """Handle Flight Load Excel file upload (admin only)"""
+    if not session.get('admin_logged_in'):
+        return jsonify({'error': 'Admin authentication required'}), 401
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if not file.filename.lower().endswith(('.xlsx', '.xls')):
+        return jsonify({'error': 'Invalid file type. Please upload Excel files only.'}), 400
+    
     try:
-        if 'file' not in request.files:
-            return jsonify({'success': False, 'error': 'No file uploaded'}), 400
-        
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'success': False, 'error': 'No file selected'}), 400
-        
-        if not allowed_file(file.filename):
-            return jsonify({'success': False, 'error': 'Invalid file type. Please upload .xlsx or .xls'}), 400
-        
-        # Save file temporarily
-        filename = secure_filename(file.filename)
-        upload_folder = '/tmp'
-        filepath = os.path.join(upload_folder, filename)
-        file.save(filepath)
+        # Read file content
+        file_content = file.read()
         
         # Process Excel file
-        start_time = time.time()
-        processed_data = parse_flight_load_excel(filepath)
-        processing_time = round(time.time() - start_time, 2)
+        processed_data = process_flight_load_excel(file_content, file.filename)
         
-        # Delete existing flight load data
-        SalesData.query.filter_by(filename='FLIGHT_LOAD_DATA').delete()
+        if not processed_data['inbound'] and not processed_data['outbound']:
+            return jsonify({'error': 'No flight load data found in Excel file'}), 400
+        
+        # Store in database (reusing SalesData model with a different identifier)
+        # Deactivate previous flight load data
+        SalesData.query.filter_by(filename='FLIGHT_LOAD_DATA').update({'is_active': False})
         
         # Create new flight load data entry
         new_data = SalesData(
@@ -105,77 +143,141 @@ def upload_flight_load():
         db.session.add(new_data)
         db.session.commit()
         
-        # Clean up temp file
-        os.remove(filepath)
-        
-        flight_620_count = len(processed_data.get('flight_620', []))
-        flight_621_count = len(processed_data.get('flight_621', []))
-        
         return jsonify({
             'success': True,
-            'message': f'Successfully processed {flight_620_count} records for Flight 620 and {flight_621_count} records for Flight 621',
-            'processing_time': processing_time,
-            'flight_620_records': flight_620_count,
-            'flight_621_records': flight_621_count
+            'message': 'Flight load data uploaded successfully',
+            'inbound_records': len(processed_data['inbound']),
+            'outbound_records': len(processed_data['outbound'])
         })
         
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        db.session.rollback()
+        return jsonify({'error': f'Failed to process file: {str(e)}'}), 500
 
-@flight_load_bp.route('/data', methods=['GET'])
+@flight_load_bp.route('/data')
 def get_flight_load_data():
-    """Get flight load data"""
+    """Get flight load data with optional filters"""
+    # Check authentication
+    is_admin = session.get('admin_logged_in', False)
+    is_public = session.get('public_authenticated', False)
+    
+    if not is_admin and not is_public:
+        return jsonify({'error': 'Authentication required'}), 401
+    
     try:
-        flight_load_data = SalesData.query.filter_by(filename='FLIGHT_LOAD_DATA', is_active=True).first()
+        # Get active flight load data
+        flight_data = SalesData.query.filter_by(filename='FLIGHT_LOAD_DATA', is_active=True).first()
         
-        if not flight_load_data:
-            return jsonify({'success': False, 'error': 'No flight load data available'}), 404
+        if not flight_data:
+            return jsonify({'error': 'No flight load data available'}), 404
         
-        data = flight_load_data.get_data()
+        data = flight_data.get_data()
+        
+        # Get filter parameters
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        flight_type = request.args.get('flight_type', 'both')  # inbound, outbound, or both
+        
+        # Filter data
+        filtered_data = {
+            'inbound': data.get('inbound', []),
+            'outbound': data.get('outbound', [])
+        }
+        
+        # Apply date filters
+        if start_date:
+            filtered_data['inbound'] = [r for r in filtered_data['inbound'] if r['travel_date'] >= start_date]
+            filtered_data['outbound'] = [r for r in filtered_data['outbound'] if r['travel_date'] >= start_date]
+        
+        if end_date:
+            filtered_data['inbound'] = [r for r in filtered_data['inbound'] if r['travel_date'] <= end_date]
+            filtered_data['outbound'] = [r for r in filtered_data['outbound'] if r['travel_date'] <= end_date]
+        
+        # Apply flight type filter
+        if flight_type == 'inbound':
+            filtered_data['outbound'] = []
+        elif flight_type == 'outbound':
+            filtered_data['inbound'] = []
         
         return jsonify({
             'success': True,
-            'data': data,
-            'upload_date': flight_load_data.upload_date.isoformat() if flight_load_data.upload_date else None
+            'data': filtered_data
         })
         
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
-@flight_load_bp.route('/charts/load-factor', methods=['GET'])
-def get_load_factor_chart():
-    """Get load factor chart data"""
+@flight_load_bp.route('/summary')
+def get_flight_load_summary():
+    """Get summary statistics for flight load data"""
+    # Check authentication
+    is_admin = session.get('admin_logged_in', False)
+    is_public = session.get('public_authenticated', False)
+    
+    if not is_admin and not is_public:
+        return jsonify({'error': 'Authentication required'}), 401
+    
     try:
-        flight_load_data = SalesData.query.filter_by(filename='FLIGHT_LOAD_DATA', is_active=True).first()
+        # Get active flight load data
+        flight_data = SalesData.query.filter_by(filename='FLIGHT_LOAD_DATA', is_active=True).first()
         
-        if not flight_load_data:
-            return jsonify({'success': False, 'error': 'No data available'}), 404
+        if not flight_data:
+            return jsonify({'error': 'No flight load data available'}), 404
         
-        data = flight_load_data.get_data()
+        data = flight_data.get_data()
         
-        # Prepare chart data for Flight 620 and 621
-        flight_620 = data.get('flight_620', [])
-        flight_621 = data.get('flight_621', [])
+        # Get filter parameters
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
         
-        chart_data = {
-            'flight_620': {
-                'dates': [record['travel_date'] for record in flight_620],
-                'load_factors': [record['load_factor'] for record in flight_620],
-                'passengers': [record['pax'] for record in flight_620],
-                'capacity': [record['tot_cap'] for record in flight_620]
-            },
-            'flight_621': {
-                'dates': [record['travel_date'] for record in flight_621],
-                'load_factors': [record['load_factor'] for record in flight_621],
-                'passengers': [record['pax'] for record in flight_621],
-                'capacity': [record['tot_cap'] for record in flight_621]
+        inbound = data.get('inbound', [])
+        outbound = data.get('outbound', [])
+        
+        # Apply date filters
+        if start_date:
+            inbound = [r for r in inbound if r['travel_date'] >= start_date]
+            outbound = [r for r in outbound if r['travel_date'] >= start_date]
+        
+        if end_date:
+            inbound = [r for r in inbound if r['travel_date'] <= end_date]
+            outbound = [r for r in outbound if r['travel_date'] <= end_date]
+        
+        # Calculate summary statistics
+        def calc_stats(records):
+            if not records:
+                return {
+                    'avg_lf': 0,
+                    'avg_lf_c': 0,
+                    'avg_lf_y': 0,
+                    'total_pax': 0,
+                    'total_pax_c': 0,
+                    'total_pax_y': 0,
+                    'total_capacity': 0,
+                    'flights_count': 0
+                }
+            
+            return {
+                'avg_lf': sum(r['lf'] for r in records) / len(records) * 100,
+                'avg_lf_c': sum(r['lf_c'] for r in records) / len(records) * 100,
+                'avg_lf_y': sum(r['lf_y'] for r in records) / len(records) * 100,
+                'total_pax': sum(r['pax'] for r in records),
+                'total_pax_c': sum(r['pax_c'] for r in records),
+                'total_pax_y': sum(r['pax_y'] for r in records),
+                'total_capacity': sum(r['tot_cap'] for r in records),
+                'flights_count': len(records)
             }
+        
+        summary = {
+            'inbound': calc_stats(inbound),
+            'outbound': calc_stats(outbound),
+            'combined': calc_stats(inbound + outbound)
         }
         
         return jsonify({
             'success': True,
-            'data': chart_data
+            'summary': summary
         })
         
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
+

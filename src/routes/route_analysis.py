@@ -1,319 +1,313 @@
-"""
-Daily Manifest Routes
-Handles manifest upload, parsing, and data retrieval
-"""
-
-from flask import Blueprint, request, jsonify
-import re
+from flask import Blueprint, request, jsonify, session
+from src.models.user import db
+from src.models.route_analysis import RouteAnalysisData
+import json
 from datetime import datetime
-from collections import Counter
-from src.models.sales import db
-from src.utils.airport_lookup import get_airport_info
+import openpyxl
+from io import BytesIO
 
-# Import the model (will be added to main models folder)
-# from src.models.manifest import DailyManifest
+route_analysis_bp = Blueprint('route_analysis', __name__)
 
-route_analysis_bp = Blueprint('manifest', __name__)
-
-def parse_manifest_text(manifest_text):
-    """
-    Parse flight manifest text and extract key data
-    Returns: dict with flight info, passenger counts, and route breakdown
-    """
-    result = {
-        'flight_number': None,
-        'flight_date': None,
-        'origin': None,
-        'destination': None,
-        'total_passengers': 0,
-        'c_class_passengers': 0,
-        'y_class_passengers': 0,
-        'male_count': 0,
-        'female_count': 0,
-        'child_count': 0,
-        'infant_count': 0,
-        'total_bags': 0,
-        'total_weight': 0,
-        'route_breakdown': {}
-    }
-    
-    # Extract flight number
-    flight_match = re.search(r'FLIGHT:\s+ET\s+(\d+)', manifest_text)
-    if flight_match:
-        result['flight_number'] = f"ET {flight_match.group(1)}"
-    
-    # Extract date
-    date_match = re.search(r'DATE:\s+(\d+)(\w+)(\d+)', manifest_text)
-    if date_match:
-        day = date_match.group(1)
-        month = date_match.group(2).upper()
-        year = date_match.group(3)
+def process_route_excel_file(file_content, filename):
+    """Process Route Analysis Excel file and extract data"""
+    try:
+        # Load workbook from bytes with data_only=True to read formula values
+        workbook = openpyxl.load_workbook(BytesIO(file_content), data_only=True)
         
-        # Convert month abbreviation to number
-        month_map = {
-            'JAN': '01', 'FEB': '02', 'MAR': '03', 'APR': '04',
-            'MAY': '05', 'JUN': '06', 'JUL': '07', 'AUG': '08',
-            'SEP': '09', 'OCT': '10', 'NOV': '11', 'DEC': '12'
+        # Use the first sheet (active sheet)
+        sheet = workbook.active
+        sheet_name = sheet.title
+        
+        # Row 2 contains headers
+        headers = []
+        for col_idx in range(1, sheet.max_column + 1):
+            header = sheet.cell(2, col_idx).value
+            headers.append(header if header is not None else f'Column_{col_idx}')
+        
+        # Extract data starting from row 3
+        routes_data = []
+        daily_totals = {}
+        
+        for row_idx in range(3, sheet.max_row + 1):
+            # Get route point from column 1
+            route_point = sheet.cell(row_idx, 1).value
+            
+            if route_point and isinstance(route_point, str):
+                row_data = {
+                    'route': route_point,
+                    'daily_values': {},
+                    'grand_total': 0,
+                    'previous_week': 0,
+                    'variance': 0
+                }
+                
+                # Extract daily values (columns 2-7)
+                for col_idx in range(2, 8):
+                    value = sheet.cell(row_idx, col_idx).value
+                    date_header = headers[col_idx - 1]
+                    
+                    if value is not None and isinstance(value, (int, float)):
+                        # Convert datetime header to string if needed
+                        if isinstance(date_header, datetime):
+                            date_str = date_header.strftime('%Y-%m-%d')
+                        else:
+                            date_str = str(date_header)
+                        
+                        row_data['daily_values'][date_str] = int(value)
+                        
+                        # Accumulate daily totals
+                        if date_str not in daily_totals:
+                            daily_totals[date_str] = 0
+                        daily_totals[date_str] += int(value)
+                
+                # Get grand total (column 8)
+                grand_total = sheet.cell(row_idx, 8).value
+                if grand_total and isinstance(grand_total, (int, float)):
+                    row_data['grand_total'] = int(grand_total)
+                
+                # Get previous week (column 9)
+                prev_week = sheet.cell(row_idx, 9).value
+                if prev_week and isinstance(prev_week, (int, float)):
+                    row_data['previous_week'] = int(prev_week)
+                
+                # Calculate variance
+                if row_data['grand_total'] and row_data['previous_week']:
+                    row_data['variance'] = row_data['grand_total'] - row_data['previous_week']
+                    row_data['variance_pct'] = round((row_data['variance'] / row_data['previous_week']) * 100, 2) if row_data['previous_week'] > 0 else 0
+                
+                routes_data.append(row_data)
+        
+        # Calculate summary metrics
+        total_passengers = sum(r['grand_total'] for r in routes_data)
+        total_previous = sum(r['previous_week'] for r in routes_data)
+        total_variance = total_passengers - total_previous
+        variance_pct = round((total_variance / total_previous) * 100, 2) if total_previous > 0 else 0
+        
+        # Find top route
+        top_route = max(routes_data, key=lambda x: x['grand_total']) if routes_data else None
+        
+        # Find busiest day
+        busiest_day = max(daily_totals.items(), key=lambda x: x[1]) if daily_totals else (None, 0)
+        
+        processed_data = {
+            'sheet_name': sheet_name,
+            'routes': routes_data,
+            'daily_totals': daily_totals,
+            'summary': {
+                'total_routes': len(routes_data),
+                'total_passengers': total_passengers,
+                'previous_week_passengers': total_previous,
+                'variance': total_variance,
+                'variance_pct': variance_pct,
+                'top_route': top_route['route'] if top_route else 'N/A',
+                'top_route_passengers': top_route['grand_total'] if top_route else 0,
+                'busiest_day': busiest_day[0] if busiest_day[0] else 'N/A',
+                'busiest_day_passengers': busiest_day[1] if busiest_day[0] else 0
+            }
         }
-        month_num = month_map.get(month[:3], '01')
         
-        # Handle 2-digit year
-        if len(year) == 2:
-            year = f"20{year}"
+        return processed_data
         
-        try:
-            result['flight_date'] = datetime.strptime(f"{year}-{month_num}-{day.zfill(2)}", "%Y-%m-%d").date()
-        except:
-            pass
-    
-    # Extract route (origin and destination)
-    route_match = re.search(r'PT\.OF EMBARKATION:\s+(\w+)\s+PT\.OF DEST:\s+(\w+)', manifest_text)
-    if route_match:
-        result['origin'] = route_match.group(1)
-        result['destination'] = route_match.group(2)
-    
-    # Extract passenger origins/destinations (TR.ORG field)
-    # Pattern: /ET\d+/([A-Z]{3})/
-    routes = re.findall(r'/ET\d+/([A-Z]{3})/', manifest_text)
-    route_counts = Counter(routes)
-    result['route_breakdown'] = dict(route_counts)
-    result['total_passengers'] = len(routes)
-    
-    # Extract class breakdown
-    # C class passengers
-    c_class_section = manifest_text.split('C CLASS')[1].split('Y CLASS')[0] if 'C CLASS' in manifest_text and 'Y CLASS' in manifest_text else ''
-    c_passengers = len(re.findall(r'^\d{3}\s', c_class_section, re.MULTILINE))
-    result['c_class_passengers'] = c_passengers
-    
-    # Y class passengers
-    y_class_section = manifest_text.split('Y CLASS')[1] if 'Y CLASS' in manifest_text else ''
-    y_passengers = len(re.findall(r'^\d{3}\s', y_class_section, re.MULTILINE))
-    result['y_class_passengers'] = y_passengers
-    
-    # Extract totals (demographics and baggage)
-    totals_match = re.search(
-        r'TOTALS:.*?MALE\s+FEMALE\s+CHILD\s+INFANT\s+BAGS\s+WEIGHT\s+\.?\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)',
-        manifest_text,
-        re.DOTALL
-    )
-    if totals_match:
-        result['male_count'] = int(totals_match.group(1))
-        result['female_count'] = int(totals_match.group(2))
-        result['child_count'] = int(totals_match.group(3))
-        result['infant_count'] = int(totals_match.group(4))
-        result['total_bags'] = int(totals_match.group(5))
-        result['total_weight'] = int(totals_match.group(6))
-    
-    return result
+    except Exception as e:
+        print(f"Error processing Route Analysis Excel file: {e}")
+        raise e
+
+@route_analysis_bp.route('/data')
+def get_current_data():
+    """Get information about the current active route analysis dataset"""
+    try:
+        active_data = RouteAnalysisData.query.filter_by(is_active=True).first()
+        if active_data:
+            data = active_data.get_data()
+            return jsonify({
+                'filename': active_data.filename,
+                'upload_date': active_data.upload_date.isoformat(),
+                'summary': data.get('summary', {}),
+                'total_routes': len(data.get('routes', []))
+            })
+        else:
+            return jsonify({'error': 'No data available'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @route_analysis_bp.route('/upload', methods=['POST'])
-def upload_manifest():
-    """
-    Upload and parse manifest file
-    Expects: manifest_text (inbound or outbound), direction (INBOUND/OUTBOUND)
-    """
+def upload_file():
+    """Handle Route Analysis Excel file upload (admin only)"""
+    if not session.get('admin_logged_in'):
+        return jsonify({'error': 'Admin authentication required'}), 401
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if not file.filename.lower().endswith(('.xlsx', '.xls')):
+        return jsonify({'error': 'Invalid file type. Please upload Excel files only.'}), 400
+    
     try:
-        data = request.get_json()
+        # Read file content
+        file_content = file.read()
         
-        if not data or 'manifest_text' not in data:
-            return jsonify({'success': False, 'error': 'No manifest text provided'}), 400
+        # Process Excel file
+        processed_data = process_route_excel_file(file_content, file.filename)
         
-        manifest_text = data['manifest_text']
-        direction = data.get('direction', 'INBOUND').upper()
+        if not processed_data or not processed_data.get('routes'):
+            return jsonify({'error': 'No route data found in Excel file'}), 400
         
-        if direction not in ['INBOUND', 'OUTBOUND']:
-            return jsonify({'success': False, 'error': 'Direction must be INBOUND or OUTBOUND'}), 400
+        # Deactivate all previous data
+        RouteAnalysisData.query.update({'is_active': False})
         
-        # Parse manifest
-        parsed_data = parse_manifest_text(manifest_text)
+        # Create new route analysis data entry using set_data method
+        route_data = RouteAnalysisData(
+            filename=file.filename,
+            is_active=True
+        )
+        route_data.set_data(processed_data)
         
-        if not parsed_data['flight_number'] or not parsed_data['flight_date']:
-            return jsonify({'success': False, 'error': 'Could not extract flight number or date from manifest'}), 400
-        
-        # Import here to avoid circular imports
-        from src.models.manifest import DailyManifest
-        
-        # Check if manifest already exists
-        existing = DailyManifest.query.filter_by(
-            flight_number=parsed_data['flight_number'],
-            flight_date=parsed_data['flight_date'],
-            direction=direction
-        ).first()
-        
-        if existing:
-            # Update existing manifest
-            manifest = existing
-        else:
-            # Create new manifest
-            manifest = DailyManifest()
-        
-        # Set all fields
-        manifest.flight_number = parsed_data['flight_number']
-        manifest.flight_date = parsed_data['flight_date']
-        manifest.direction = direction
-        manifest.origin = parsed_data['origin']
-        manifest.destination = parsed_data['destination']
-        manifest.total_passengers = parsed_data['total_passengers']
-        manifest.c_class_passengers = parsed_data['c_class_passengers']
-        manifest.y_class_passengers = parsed_data['y_class_passengers']
-        manifest.male_count = parsed_data['male_count']
-        manifest.female_count = parsed_data['female_count']
-        manifest.child_count = parsed_data['child_count']
-        manifest.infant_count = parsed_data['infant_count']
-        manifest.total_bags = parsed_data['total_bags']
-        manifest.total_weight = parsed_data['total_weight']
-        manifest.set_route_breakdown(parsed_data['route_breakdown'])
-        manifest.upload_date = datetime.utcnow()
-        
-        if not existing:
-            db.session.add(manifest)
-        
+        db.session.add(route_data)
         db.session.commit()
         
         return jsonify({
-            'success': True,
-            'message': f"Successfully processed {direction} manifest for {parsed_data['flight_number']} on {parsed_data['flight_date']}",
-            'data': manifest.to_dict()
+            'message': 'File uploaded and processed successfully',
+            'filename': file.filename,
+            'data_id': route_data.id,
+            'summary': processed_data.get('summary', {})
         })
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        print(f"Upload error: {e}")
+        return jsonify({'error': f'Error processing file: {str(e)}'}), 500
 
-@route_analysis_bp.route('/data', methods=['GET'])
-def get_manifest_data():
-    """
-    Get manifest data with optional filtering
-    Query params: start_date, end_date, direction, flight_number
-    """
+@route_analysis_bp.route('/charts/top-routes')
+def get_top_routes():
+    """Get top 10 routes by passenger count"""
     try:
-        from src.models.manifest import DailyManifest
+        active_data = RouteAnalysisData.query.filter_by(is_active=True).first()
+        if not active_data:
+            return jsonify({'error': 'No active dataset found'}), 404
         
-        query = DailyManifest.query
+        data = active_data.get_data()
+        routes = data.get('routes', [])
         
-        # Apply filters
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
-        direction = request.args.get('direction')
-        flight_number = request.args.get('flight_number')
-        
-        if start_date:
-            query = query.filter(DailyManifest.flight_date >= datetime.strptime(start_date, '%Y-%m-%d').date())
-        if end_date:
-            query = query.filter(DailyManifest.flight_date <= datetime.strptime(end_date, '%Y-%m-%d').date())
-        if direction:
-            query = query.filter(DailyManifest.direction == direction.upper())
-        if flight_number:
-            query = query.filter(DailyManifest.flight_number == flight_number)
-        
-        # Order by date descending
-        manifests = query.order_by(DailyManifest.flight_date.desc()).all()
+        # Sort by grand total and get top 10
+        top_routes = sorted(routes, key=lambda x: x['grand_total'], reverse=True)[:10]
         
         return jsonify({
-            'success': True,
-            'count': len(manifests),
-            'data': [m.to_dict() for m in manifests]
+            'labels': [r['route'] for r in top_routes],
+            'data': [r['grand_total'] for r in top_routes],
+            'previous_week': [r['previous_week'] for r in top_routes]
         })
         
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
-@route_analysis_bp.route('/charts/top-routes', methods=['GET'])
-def get_top_routes_chart():
-    """
-    Get top routes chart data
-    Query params: direction (INBOUND/OUTBOUND), days (default 30)
-    """
+@route_analysis_bp.route('/charts/daily-trend')
+def get_daily_trend():
+    """Get daily passenger trend"""
     try:
-        from src.models.manifest import DailyManifest
-        from datetime import timedelta
+        active_data = RouteAnalysisData.query.filter_by(is_active=True).first()
+        if not active_data:
+            return jsonify({'error': 'No active dataset found'}), 404
         
-        direction = request.args.get('direction', 'INBOUND').upper()
-        days = int(request.args.get('days', 30))
+        data = active_data.get_data()
+        daily_totals = data.get('daily_totals', {})
         
-        # Get manifests from last N days
-        start_date = datetime.utcnow().date() - timedelta(days=days)
-        manifests = DailyManifest.query.filter(
-            DailyManifest.direction == direction,
-            DailyManifest.flight_date >= start_date
-        ).all()
-        
-        # Aggregate route breakdown
-        route_totals = Counter()
-        for manifest in manifests:
-            breakdown = manifest.get_route_breakdown()
-            route_totals.update(breakdown)
-        
-        # Get top 10 routes with airport info
-        top_routes = []
-        for route_code, count in route_totals.most_common(10):
-            airport_info = get_airport_info(route_code)
-            top_routes.append({
-                'code': route_code,
-                'name': airport_info['name'] if airport_info else route_code,
-                'city': airport_info['city'] if airport_info else '',
-                'country': airport_info['country'] if airport_info else '',
-                'passengers': count
-            })
+        # Sort by date
+        sorted_days = sorted(daily_totals.items())
         
         return jsonify({
-            'success': True,
-            'direction': direction,
-            'period_days': days,
-            'routes': top_routes
+            'labels': [day[0] for day in sorted_days],
+            'data': [day[1] for day in sorted_days]
         })
         
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
-@route_analysis_bp.route('/charts/daily-trend', methods=['GET'])
-def get_daily_trend_chart():
-    """
-    Get daily passenger trend chart data
-    Query params: direction, days (default 30)
-    """
+@route_analysis_bp.route('/charts/growth')
+def get_growth_chart():
+    """Get routes with highest growth (variance)"""
     try:
-        from src.models.manifest import DailyManifest
-        from datetime import timedelta
+        active_data = RouteAnalysisData.query.filter_by(is_active=True).first()
+        if not active_data:
+            return jsonify({'error': 'No active dataset found'}), 404
         
-        direction = request.args.get('direction')
-        days = int(request.args.get('days', 30))
+        data = active_data.get_data()
+        routes = data.get('routes', [])
         
-        start_date = datetime.utcnow().date() - timedelta(days=days)
-        query = DailyManifest.query.filter(DailyManifest.flight_date >= start_date)
-        
-        if direction:
-            query = query.filter(DailyManifest.direction == direction.upper())
-        
-        manifests = query.order_by(DailyManifest.flight_date).all()
-        
-        # Group by date
-        daily_data = {}
-        for manifest in manifests:
-            date_str = manifest.flight_date.isoformat()
-            if date_str not in daily_data:
-                daily_data[date_str] = {
-                    'date': date_str,
-                    'inbound': 0,
-                    'outbound': 0,
-                    'total': 0
-                }
-            
-            if manifest.direction == 'INBOUND':
-                daily_data[date_str]['inbound'] += manifest.total_passengers
-            else:
-                daily_data[date_str]['outbound'] += manifest.total_passengers
-            
-            daily_data[date_str]['total'] += manifest.total_passengers
-        
-        # Convert to list and sort by date
-        trend_data = sorted(daily_data.values(), key=lambda x: x['date'])
+        # Filter routes with variance and sort by variance percentage
+        routes_with_variance = [r for r in routes if r.get('variance_pct') is not None]
+        sorted_routes = sorted(routes_with_variance, key=lambda x: abs(x['variance_pct']), reverse=True)[:10]
         
         return jsonify({
-            'success': True,
-            'period_days': days,
-            'data': trend_data
+            'labels': [r['route'] for r in sorted_routes],
+            'data': [r['variance_pct'] for r in sorted_routes],
+            'variance': [r['variance'] for r in sorted_routes]
         })
         
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
+
+@route_analysis_bp.route('/charts/distribution')
+def get_distribution():
+    """Get passenger distribution by route (top 10)"""
+    try:
+        active_data = RouteAnalysisData.query.filter_by(is_active=True).first()
+        if not active_data:
+            return jsonify({'error': 'No active dataset found'}), 404
+        
+        data = active_data.get_data()
+        routes = data.get('routes', [])
+        
+        # Get top 10 routes
+        top_routes = sorted(routes, key=lambda x: x['grand_total'], reverse=True)[:10]
+        
+        # Calculate "Others"
+        top_total = sum(r['grand_total'] for r in top_routes)
+        all_total = sum(r['grand_total'] for r in routes)
+        others = all_total - top_total
+        
+        labels = [r['route'] for r in top_routes]
+        data_values = [r['grand_total'] for r in top_routes]
+        
+        if others > 0:
+            labels.append('Others')
+            data_values.append(others)
+        
+        return jsonify({
+            'labels': labels,
+            'data': data_values
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@route_analysis_bp.route('/debug/data')
+def debug_data():
+    """Debug endpoint to check data structure"""
+    try:
+        active_data = RouteAnalysisData.query.filter_by(is_active=True).first()
+        if not active_data:
+            return jsonify({'error': 'No active dataset found'}), 404
+        
+        data = active_data.get_data()
+        
+        # Return structure info
+        debug_info = {
+            'sheet_name': data.get('sheet_name'),
+            'total_routes': len(data.get('routes', [])),
+            'sample_route': data.get('routes', [{}])[0] if data.get('routes') else {},
+            'summary': data.get('summary', {})
+        }
+        
+        return jsonify({
+            'filename': active_data.filename,
+            'upload_date': active_data.upload_date.isoformat(),
+            'debug_info': debug_info
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+

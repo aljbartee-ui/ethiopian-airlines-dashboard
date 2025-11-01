@@ -1,138 +1,119 @@
-# Route Analysis Dashboard - Quick Start
+# Route Analysis Dashboard - Quick Start Guide
 
-## 🚀 3-Step Deployment
+## 🚀 Deploy in 3 Steps
 
-### Step 1: Push to GitHub
+### Step 1: Update GitHub Repository
 ```bash
 cd /path/to/ethiopian-airlines-dashboard
+
+# Copy these files from the deployment package:
+# - src/models/route_analysis.py (NEW)
+# - src/routes/route_analysis.py (NEW)
+# - src/static/route-analysis.html (NEW)
+# - src/main.py (REPLACE)
+# - src/static/index.html (REPLACE)
+
 git add .
 git commit -m "Add Route Analysis dashboard"
 git push origin main
 ```
 
-### Step 2: Wait for Render
-- Go to https://dashboard.render.com
-- Wait for "Deploy live" (2-3 minutes)
+### Step 2: Wait for Auto-Deployment
+- Render will automatically deploy (2-3 minutes)
+- Monitor at: https://dashboard.render.com
+- Wait for "Deploy live" status
 
-### Step 3: Test
-- Visit: https://ethiopian-airlines-dashboard.onrender.com
-- Click: Flight Load → Route Analysis
-- Upload: routeanalysis.xlsx
-- View: Charts and metrics
-
----
-
-## ✅ What You Get
-
-### 6 Metric Cards
-1. Total Routes
-2. Total Passengers (with growth %)
-3. Previous Week
-4. Top Route (with city/country)
-5. Busiest Day
-6. Week Period
-
-### 5 Interactive Charts
-1. Top 10 Destinations (Bar)
-2. Daily Passenger Trend (Line)
-3. Current vs Previous Week (Bar)
-4. Passenger Distribution (Doughnut)
-5. Top 10 Growth Rates (Horizontal Bar)
-
-### Features
-- ✅ Airport code identification (ACC → Accra, Ghana)
-- ✅ 2,000+ airports in database
-- ✅ Week-over-week growth tracking
-- ✅ Interactive hover tooltips
-- ✅ Ethiopian Airlines branding
-- ✅ Mobile responsive
+### Step 3: Upload Data
+1. Visit: `https://ethiopian-airlines-dashboard.onrender.com/route-analysis`
+2. Click "Upload Data"
+3. Login: `admin` / `admin123`
+4. Upload your Excel file
+5. View the dashboard!
 
 ---
 
-## 📊 Tested Results
+## 📊 What You Get
 
-**Your Excel File (21sep-28sep25):**
-- 82 routes parsed ✅
-- 223 total passengers ✅
-- +5.69% growth ✅
-- Top route: ACC (Accra, Ghana) ✅
-- All charts working ✅
+### 6 Metrics
+- Total Routes
+- Total Passengers (current week)
+- Previous Week Passengers
+- Week-over-Week Change %
+- Top Route
+- Busiest Day
 
----
-
-## 🔧 Files Changed
-
-**New Files:**
-- src/utils/airport_lookup.py
-- src/models/route_analysis.py
-- src/routes/route_analysis.py
-- src/static/flight-load-route-analysis.html
-- src/static/flight-load-menu.html
-- src/static/flight-load-factor.html
-
-**Updated Files:**
-- src/main.py
-- src/static/index.html
+### 5 Charts
+- Top 10 Routes (Bar Chart)
+- Daily Passenger Trend (Line Chart)
+- Week-over-Week Comparison (Bar Chart)
+- Passenger Distribution (Doughnut Chart)
+- Growth Leaders (Horizontal Bar Chart)
 
 ---
 
-## 🎯 Navigation Structure
+## 📁 Excel File Format
 
+Your Excel file should have:
+- **Row 2**: Headers (POINTS, dates, GRAND TOTAL, PREVIOUS WEEK)
+- **Row 3+**: Route data (airport codes, daily counts, totals)
+
+Example:
 ```
-Home
-├── Sales Report
-└── Flight Load (menu)
-    ├── Load Factor
-    └── Route Analysis ← NEW!
+POINTS | 2025-09-21 | 2025-09-22 | ... | GRAND TOTAL | PREVIOUS WEEK
+ABV    | 11         | 5          | ... | 37          | 46
+ADD    | 44         | 36         | ... | 393         | 291
 ```
 
----
-
-## 📝 Excel Format
-
-**Required Structure:**
-```
-Row 1: Empty
-Row 2: POINTS | Date1 | Date2 | ... | GRAND TOTAL | PREVIOUS WEEK | VARIANCE
-Row 3+: CODE  | pax1  | pax2  | ... | total       | prev          | var
-```
-
-**Supported:**
-- .xlsx and .xls files
-- Multiple sheets (uses active sheet)
-- Any date format
-- Missing GRAND TOTAL (auto-calculated)
+The system automatically:
+- Reads any sheet (uses first/active sheet)
+- Calculates variance and growth %
+- Identifies top routes and busiest days
+- Handles different date formats
 
 ---
 
-## ❓ Troubleshooting
+## ✅ Testing Checklist
+
+After deployment:
+- [ ] Home page shows "Route Analysis" option
+- [ ] Route Analysis page loads
+- [ ] Upload button works
+- [ ] Admin login works
+- [ ] Excel upload succeeds
+- [ ] All metrics populate
+- [ ] All charts display
+- [ ] Charts are interactive
+- [ ] Back to Home works
+
+---
+
+## 🔧 Troubleshooting
 
 **Charts not showing?**
-- Check browser console (F12)
-- Verify upload was successful
-- Check Render logs
-
-**404 Not Found?**
-- Verify GitHub push completed
-- Check Render deployment finished
 - Clear browser cache
+- Wait 10 seconds after page load
+- Check browser console for errors
 
-**Airport shows "Unknown"?**
-- Code not in database (2,000+ included)
-- Can add custom codes if needed
+**Upload fails?**
+- Verify file is .xlsx or .xls
+- Check file has data in expected format
+- Ensure admin is logged in
 
----
-
-## 📞 Need Help?
-
-See **DEPLOYMENT_GUIDE.md** for:
-- Detailed instructions
-- Troubleshooting guide
-- API documentation
-- Security features
-- Future enhancements
+**Render not deploying?**
+- Check all files are committed to GitHub
+- Manually trigger rebuild on Render
+- Check Render logs for errors
 
 ---
 
-**Ready to Deploy!** 🎉
+## 📞 Quick Links
+
+- **Live Site**: https://ethiopian-airlines-dashboard.onrender.com
+- **Route Analysis**: https://ethiopian-airlines-dashboard.onrender.com/route-analysis
+- **Render Dashboard**: https://dashboard.render.com
+- **GitHub Repo**: https://github.com/aljbartee-ui/ethiopian-airlines-dashboard
+
+---
+
+**Ready to deploy? Follow Step 1-3 above!**
 
