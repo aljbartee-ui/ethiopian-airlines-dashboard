@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Forecast - Ethiopian Airlines</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2d5016 0%, #1a3009 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Ethiopian Airlines Colors */
+        :root {
+            --et-green: #2d5016;
+            --et-yellow: #ffd700;
+            --et-red: #dc143c;
+            --et-light-green: #4a7c2a;
+            --et-dark-green: #1a3009;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--et-green) 0%, var(--et-dark-green) 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-bottom: 5px solid var(--et-yellow);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: var(--et-yellow);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--et-dark-green);
+        }
+
+        .control-group input,
+        .control-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: var(--et-green);
+            box-shadow: 0 0 0 3px rgba(45, 80, 22, 0.1);
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: var(--et-green);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--et-light-green);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(45, 80, 22, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--et-yellow);
+            color: var(--et-dark-green);
+        }
+
+        .btn-secondary:hover {
+            background: #ffed4e;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--et-red);
+            color: white;
+        }
+
+        .forecast-table-container {
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        .forecast-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .forecast-table th {
+            background: var(--et-green);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border: 1px solid var(--et-dark-green);
+        }
+
+        .forecast-table td {
+            padding: 12px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+
+        .forecast-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .forecast-table input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 1em;
+        }
+
+        .forecast-table input[type="number"]:focus {
+            outline: none;
+            border-color: var(--et-green);
+        }
+
+        .forecast-table select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        /* Manifest-confirmed cell (green) */
+        .confirmed {
+            background: #d4edda !important;
+            border-color: #28a745 !important;
+        }
+
+        .confirmed input {
+            background: #d4edda;
+            border-color: #28a745;
+            font-weight: 600;
+        }
+
+        /* Forecast cell (yellow) */
+        .forecast {
+            background: #fff3cd !important;
+        }
+
+        .forecast input {
+            background: #fff3cd;
+        }
+
+        .airport-cell {
+            min-width: 150px;
+        }
+
+        .date-cell {
+            min-width: 120px;
+        }
+
+        .add-row-btn {
+            margin: 20px 0;
+            display: inline-block;
+        }
+
+        .actions {
+            padding: 30px;
+            background: #f8f9fa;
+            border-top: 2px solid #dee2e6;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .legend {
+            padding: 20px 30px;
+            background: white;
+            border-top: 2px solid #dee2e6;
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-box {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: 2px solid #dee2e6;
+        }
+
+        .legend-box.confirmed {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .legend-box.forecast {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+
+        .message {
+            padding: 15px;
+            margin: 20px 30px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: var(--et-green);
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .controls, .actions, .legend {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✈️ Route Forecast Interface</h1>
+            <p>Manual Passenger Forecast with Excel Integration</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-row">
+                <div class="control-group">
+                    <label for="startDate">Start Date</label>
+                    <input type="date" id="startDate" required>
+                </div>
+                <div class="control-group">
+                    <label for="endDate">End Date</label>
+                    <input type="date" id="endDate" required>
+                </div>
+                <div class="control-group">
+                    <label for="direction">Flight Direction</label>
+                    <select id="direction">
+                        <option value="inbound">Inbound (to ADD)</option>
+                        <option value="outbound">Outbound (from ADD)</option>
+                    </select>
+                </div>
+                <div class="control-group" style="display: flex; align-items: flex-end;">
+                    <button class="btn btn-primary" onclick="loadForecastData()">Load Data</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div class="forecast-table-container">
+            <button class="btn btn-secondary add-row-btn" onclick="addAirportRow()">+ Add Airport</button>
+            
+            <table class="forecast-table" id="forecastTable">
+                <thead>
+                    <tr id="tableHeader">
+                        <th class="airport-cell">Airport</th>
+                        <!-- Date columns will be added dynamically -->
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="100%" class="loading">Select date range and click "Load Data" to begin</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="saveForecastData()">💾 Save Forecast</button>
+            <button class="btn btn-secondary" onclick="copyToExcel()">📋 Copy to Excel</button>
+            <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All</button>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box confirmed"></div>
+                <span><strong>Green:</strong> Manifest Confirmed (Actual Data)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box forecast"></div>
+                <span><strong>Yellow:</strong> Forecast (Manual Entry)</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let airports = [];
+        let dates = [];
+        let forecastData = {};
+        let manifestDates = [];
+
+        // Load airports on page load
+        async function loadAirports() {
+            try {
+                const response = await fetch('/api/airports/list');
+                const result = await response.json();
+                if (result.success) {
+                    airports = result.airports;
+                }
+            } catch (error) {
+                console.error('Error loading airports:', error);
+            }
+        }
+
+        // Load forecast data for date range
+        async function loadForecastData() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const direction = document.getElementById('direction').value;
+
+            if (!startDate || !endDate) {
+                showMessage('Please select both start and end dates', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/forecast/data?start_date=${startDate}&end_date=${endDate}&direction=${direction}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    dates = result.result.dates;
+                    forecastData = result.result.data;
+                    manifestDates = result.result.manifest_dates;
+                    
+                    renderTable();
+                    showMessage('Data loaded successfully', 'success');
+                } else {
+                    showMessage(result.error || 'Failed to load data', 'error');
+                }
+            } catch (error) {
+                showMessage('Error loading data: ' + error.message, 'error');
+            }
+        }
+
+        // Render the forecast table
+        function renderTable() {
+            const tableHeader = document.getElementById('tableHeader');
+            const tableBody = document.getElementById('tableBody');
+
+            // Build header with date columns
+            let headerHTML = '<th class="airport-cell">Airport</th>';
+            dates.forEach(date => {
+                const isManifest = manifestDates.includes(date);
+                const dateObj = new Date(date);
+                const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                headerHTML += `<th class="date-cell ${isManifest ? 'confirmed' : ''}">${formattedDate}<br>${date}</th>`;
+            });
+            headerHTML += '<th>Actions</th>';
+            tableHeader.innerHTML = headerHTML;
+
+            // Build body rows
+            let bodyHTML = '';
+            const airportCodes = Object.keys(forecastData).length > 0 ? Object.keys(forecastData) : [''];
+
+            airportCodes.forEach((airportCode, rowIndex) => {
+                bodyHTML += '<tr>';
+                
+                // Airport dropdown
+                bodyHTML += '<td class="airport-cell">';
+                bodyHTML += '<select onchange="updateAirport(this, ' + rowIndex + ')">';
+                bodyHTML += '<option value="">-- Select Airport --</option>';
+                airports.forEach(airport => {
+                    const selected = airport.code === airportCode ? 'selected' : '';
+                    bodyHTML += `<option value="${airport.code}" ${selected}>${airport.code} - ${airport.name || ''}</option>`;
+                });
+                bodyHTML += '</select>';
+                bodyHTML += '</td>';
+
+                // Date columns
+                dates.forEach(date => {
+                    const isManifest = manifestDates.includes(date);
+                    const cellData = forecastData[airportCode] && forecastData[airportCode][date] || { passengers: 0, confirmed: false };
+                    const cellClass = cellData.confirmed ? 'confirmed' : 'forecast';
+                    const readonly = cellData.confirmed ? 'readonly' : '';
+                    
+                    bodyHTML += `<td class="${cellClass}">`;
+                    bodyHTML += `<input type="number" value="${cellData.passengers}" ${readonly} 
+                                 onchange="updateCell('${airportCode}', '${date}', this.value)" 
+                                 min="0" step="1">`;
+                    bodyHTML += '</td>';
+                });
+
+                // Actions
+                bodyHTML += '<td>';
+                bodyHTML += `<button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.8em;" onclick="deleteRow(${rowIndex})">Delete</button>`;
+                bodyHTML += '</td>';
+                
+                bodyHTML += '</tr>';
+            });
+
+            tableBody.innerHTML = bodyHTML;
+        }
+
+        // Update cell value
+        function updateCell(airport, date, value) {
+            if (!forecastData[airport]) {
+                forecastData[airport] = {};
+            }
+            forecastData[airport][date] = {
+                passengers: parseInt(value) || 0,
+                confirmed: false
+            };
+        }
+
+        // Update airport selection
+        function updateAirport(selectElement, rowIndex) {
+            // Implementation for changing airport code
+            renderTable();
+        }
+
+        // Add new airport row
+        function addAirportRow() {
+            if (dates.length === 0) {
+                showMessage('Please load data first', 'error');
+                return;
+            }
+
+            const newAirport = prompt('Enter airport code (e.g., DXB):');
+            if (newAirport) {
+                const code = newAirport.toUpperCase().trim();
+                if (!forecastData[code]) {
+                    forecastData[code] = {};
+                    dates.forEach(date => {
+                        forecastData[code][date] = { passengers: 0, confirmed: false };
+                    });
+                    renderTable();
+                }
+            }
+        }
+
+        // Delete row
+        function deleteRow(rowIndex) {
+            if (confirm('Are you sure you want to delete this row?')) {
+                const airportCodes = Object.keys(forecastData);
+                if (airportCodes[rowIndex]) {
+                    delete forecastData[airportCodes[rowIndex]];
+                    renderTable();
+                }
+            }
+        }
+
+        // Save forecast data
+        async function saveForecastData() {
+            const direction = document.getElementById('direction').value;
+            const forecasts = [];
+
+            // Build forecast array
+            for (const [airport, dateData] of Object.entries(forecastData)) {
+                for (const [date, data] of Object.entries(dateData)) {
+                    if (!data.confirmed) {  // Only save forecast data, not manifest
+                        forecasts.push({
+                            date: date,
+                            airport_code: airport,
+                            direction: direction,
+                            passengers: data.passengers
+                        });
+                    }
+                }
+            }
+
+            try {
+                const response = await fetch('/api/forecast/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ forecasts: forecasts })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showMessage('Forecast saved successfully!', 'success');
+                } else {
+                    showMessage(result.error || 'Failed to save forecast', 'error');
+                }
+            } catch (error) {
+                showMessage('Error saving forecast: ' + error.message, 'error');
+            }
+        }
+
+        // Copy table to Excel
+        function copyToExcel() {
+            const table = document.getElementById('forecastTable');
+            const range = document.createRange();
+            range.selectNode(table);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+            
+            showMessage('Table copied! You can now paste it into Excel', 'success');
+        }
+
+        // Clear all data
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear all forecast data? This cannot be undone.')) {
+                forecastData = {};
+                renderTable();
+                showMessage('All data cleared', 'success');
+            }
+        }
+
+        // Show message
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = 'message ' + type;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAirports();
+            
+            // Set default dates (today to 7 days from now)
+            const today = new Date();
+            const nextWeek = new Date(today);
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            
+            document.getElementById('startDate').valueAsDate = today;
+            document.getElementById('endDate').valueAsDate = nextWeek;
+        });
+    </script>
+</body>
+</html>
+
