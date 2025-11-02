@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 from src.models.user import db
-from src.models.sales import SalesData, AdminUser
+from src.models.sales import SalesData
+from src.models.user import AdminUser
 import os
 import json
 from datetime import datetime
@@ -70,11 +71,12 @@ def get_current_data():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+from src.routes.auth import admin_required
+
 @sales_bp.route('/upload', methods=['POST'])
+@admin_required
 def upload_file():
     """Handle Excel file upload (admin only)"""
-    if not session.get('admin_logged_in'):
-        return jsonify({'error': 'Admin authentication required'}), 401
     
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
