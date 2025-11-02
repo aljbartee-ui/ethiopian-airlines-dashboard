@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, session, redirect, url_for
 from src.models.user import db, AdminUser
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from functools import wraps
 auth_bp = Blueprint('auth', __name__)
 
 # NOTE: In a real application, this should be done securely, e.g., via a CLI command or a one-time setup page.
@@ -51,6 +51,7 @@ def status():
     return jsonify({'admin_logged_in': session.get('admin_logged_in', False)}), 200
 
 def admin_required(f):
+    @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('admin_logged_in'):
             return jsonify({'error': 'Admin authentication required'}), 401
