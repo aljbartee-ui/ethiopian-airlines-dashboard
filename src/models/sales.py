@@ -27,19 +27,3 @@ class SalesData(db.Model):
     def set_data(self, data):
         """Store data as JSON string"""
         self.data_json = json.dumps(data, default=str)
-
-class AdminUser(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
-    created_date = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    def __repr__(self):
-        return f'<AdminUser {self.username}>'
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'username': self.username,
-            'created_date': self.created_date.isoformat()
-        }
