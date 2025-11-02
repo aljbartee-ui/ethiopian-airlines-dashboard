@@ -1,410 +1,353 @@
-from flask import Blueprint, request, jsonify
-import re
-from datetime import datetime
-from collections import Counter
-from src.models.sales import db
-from src.utils.airport_lookup import get_airport_info
-
-# Import the model (will be added to main models folder)
-# from src.models.manifest import DailyManifest
+from flask import Blueprint, render_template, request, jsonify, session
+from src.models.user import db
+from src.models.manifest import DailyManifest, RouteForecast, AirportMaster
+from datetime import datetime, timedelta
+import openpyxl
+from io import BytesIO
+from collections import defaultdict
 
 manifest_bp = Blueprint('manifest', __name__)
 
-def parse_manifest_text(manifest_text):
-    """
-    Parse flight manifest text and extract key data
-    Returns: dict with flight info, passenger counts, and route breakdown
-    """
-    result = {
-        'flight_number': None,
-        'flight_date': None,
-        'origin': None,
-        'destination': None,
-        'total_passengers': 0,
-        'c_class_passengers': 0,
-        'y_class_passengers': 0,
-        'male_count': 0,
-        'female_count': 0,
-        'child_count': 0,
-        'infant_count': 0,
-        'total_bags': 0,
-        'total_weight': 0,
-        'route_breakdown': {}
-    }
-    
-    # Extract flight number
-    flight_match = re.search(r'FLIGHT:\s+ET\s+(\d+)', manifest_text)
-    if flight_match:
-        result['flight_number'] = f"ET {flight_match.group(1)}"
-    
-    # Extract date
-    date_match = re.search(r'DATE:\s+(\d+)(\w+)(\d+)', manifest_text)
-    if date_match:
-        day = date_match.group(1)
-        month = date_match.group(2).upper()
-        year = date_match.group(3)
-        
-        # Convert month abbreviation to number
-        month_map = {
-            'JAN': '01', 'FEB': '02', 'MAR': '03', 'APR': '04',
-            'MAY': '05', 'JUN': '06', 'JUL': '07', 'AUG': '08',
-            'SEP': '09', 'OCT': '10', 'NOV': '11', 'DEC': '12'
-        }
-        month_num = month_map.get(month[:3], '01')
-        
-        # Handle 2-digit year
-        if len(year) == 2:
-            year = f"20{year}"
-        
-        try:
-            result['flight_date'] = datetime.strptime(f"{year}-{month_num}-{day.zfill(2)}", "%Y-%m-%d").date()
-        except:
-            pass
-    
-    # Extract route (origin and destination)
-    route_match = re.search(r'PT\.OF EMBARKATION:\s+(\w+)\s+PT\.OF DEST:\s+(\w+)', manifest_text)
-    if route_match:
-        result['origin'] = route_match.group(1)
-        result['destination'] = route_match.group(2)
-    
-    # Extract passenger origins/destinations (TR.ORG field)
-    # Pattern: /ET\d+/([A-Z]{3})/
-    routes = re.findall(r'/ET\d+/([A-Z]{3})/', manifest_text)
-    route_counts = Counter(routes)
-    result['route_breakdown'] = dict(route_counts)
-    result['total_passengers'] = len(routes)
-    
-    # Extract class breakdown
-    # C class passengers
-    c_class_section = manifest_text.split('C CLASS')[1].split('Y CLASS')[0] if 'C CLASS' in manifest_text and 'Y CLASS' in manifest_text else ''
-    c_passengers = len(re.findall(r'^\d{3}\s', c_class_section, re.MULTILINE))
-    result['c_class_passengers'] = c_passengers
-    
-    # Y class passengers
-    y_class_section = manifest_text.split('Y CLASS')[1] if 'Y CLASS' in manifest_text else ''
-    y_passengers = len(re.findall(r'^\d{3}\s', y_class_section, re.MULTILINE))
-    result['y_class_passengers'] = y_passengers
-    
-    # Extract totals (demographics and baggage)
-    totals_match = re.search(
-        r'TOTALS:.*?MALE\s+FEMALE\s+CHILD\s+INFANT\s+BAGS\s+WEIGHT\s+\.?\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)',
-        manifest_text,
-        re.DOTALL
-    )
-    if totals_match:
-        result['male_count'] = int(totals_match.group(1))
-        result['female_count'] = int(totals_match.group(2))
-        result['child_count'] = int(totals_match.group(3))
-        result['infant_count'] = int(totals_match.group(4))
-        result['total_bags'] = int(totals_match.group(5))
-        result['total_weight'] = int(totals_match.group(6))
-    
-    return result
+def admin_required(f):
+    """Decorator to require admin authentication"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            return jsonify({'success': False, 'error': 'Admin authentication required'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
 
-@manifest_bp.route('/upload', methods=['POST'])
+@manifest_bp.route('/manifest-dashboard')
+def manifest_dashboard():
+    """Manifest upload and analytics dashboard"""
+    return render_template('manifest-dashboard.html')
+
+@manifest_bp.route('/forecast-interface')
+def forecast_interface():
+    """Manual forecast data entry interface"""
+    return render_template('forecast-interface.html')
+
+@manifest_bp.route('/api/manifest/upload', methods=['POST'])
+@admin_required
 def upload_manifest():
     """
-    Upload and parse manifest file
-    Expects: manifest_text (inbound or outbound), direction (INBOUND/OUTBOUND)
+    Upload daily manifest (actual passenger data)
+    This OVERRIDES Excel forecast for the specific date
     """
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No file selected'}), 400
+    
     try:
-        data = request.get_json()
+        # Read manifest file
+        file_content = file.read()
+        workbook = openpyxl.load_workbook(BytesIO(file_content), data_only=True)
+        sheet = workbook.active
         
-        if not data or 'manifest_text' not in data:
-            return jsonify({'success': False, 'error': 'No manifest text provided'}), 400
+        # Parse manifest data
+        # Assuming format: Date | Flight | Direction | Total Pax | Business | Economy | Route Breakdown
+        records_processed = 0
         
-        manifest_text = data['manifest_text']
-        direction = data.get('direction', 'INBOUND').upper()
-        
-        if direction not in ['INBOUND', 'OUTBOUND']:
-            return jsonify({'success': False, 'error': 'Direction must be INBOUND or OUTBOUND'}), 400
-        
-        # Parse manifest
-        parsed_data = parse_manifest_text(manifest_text)
-        
-        if not parsed_data['flight_number'] or not parsed_data['flight_date']:
-            return jsonify({'success': False, 'error': 'Could not extract flight number or date from manifest'}), 400
-        
-        # Import here to avoid circular imports
-        from src.models.manifest import DailyManifest
-        from src.models.flight_load import FlightLoadRecord
-        from src.models.route_analysis import ManualForecast
-        
-        flight_no = parsed_data['flight_number'].split(' ')[1] # Assuming "ET 620" -> "620"
-        travel_date = parsed_data['flight_date']
-        
-        # 1. Update/Create DailyManifest record
-        existing_manifest = DailyManifest.query.filter_by(
-            flight_number=parsed_data['flight_number'],
-            flight_date=travel_date,
-            direction=direction
-        ).first()
-        
-        if existing_manifest:
-            manifest = existing_manifest
-        else:
-            manifest = DailyManifest()
-        
-        # Set all fields
-        manifest.flight_number = parsed_data['flight_number']
-        manifest.flight_date = travel_date
-        manifest.direction = direction
-        manifest.origin = parsed_data['origin']
-        manifest.destination = parsed_data['destination']
-        manifest.total_passengers = parsed_data['total_passengers']
-        manifest.c_class_passengers = parsed_data['c_class_passengers']
-        manifest.y_class_passengers = parsed_data['y_class_passengers']
-        manifest.male_count = parsed_data['male_count']
-        manifest.female_count = parsed_data['female_count']
-        manifest.child_count = parsed_data['child_count']
-        manifest.infant_count = parsed_data['infant_count']
-        manifest.total_bags = parsed_data['total_bags']
-        manifest.total_weight = parsed_data['total_weight']
-        manifest.set_route_breakdown(parsed_data['route_breakdown'])
-        manifest.upload_date = datetime.utcnow()
-        
-        if not existing_manifest:
-            db.session.add(manifest)
+        for row_idx in range(2, sheet.max_row + 1):
+            date_val = sheet.cell(row_idx, 1).value
+            flight_no = str(sheet.cell(row_idx, 2).value) if sheet.cell(row_idx, 2).value else None
+            direction = str(sheet.cell(row_idx, 3).value).lower() if sheet.cell(row_idx, 3).value else None
+            total_pax = int(sheet.cell(row_idx, 4).value) if sheet.cell(row_idx, 4).value else 0
+            business_pax = int(sheet.cell(row_idx, 5).value) if sheet.cell(row_idx, 5).value else 0
+            economy_pax = int(sheet.cell(row_idx, 6).value) if sheet.cell(row_idx, 6).value else 0
             
-        # 2. Update/Create FlightLoadRecord with manifest data (Actual Load)
-        # ... (existing logic for FlightLoadRecord) ...
-        
-        # 3. Update/Create ManualForecast records for each route in the breakdown
-        route_breakdown = manifest.get_route_breakdown()
-        
-        for airport_code, pax_count in route_breakdown.items():
-            # Determine direction based on the manifest's direction
-            # For simplicity, we'll assume the manifest direction is the direction of the passenger flow
-            # e.g., INBOUND manifest means passengers are inbound to the destination (KWI in the example)
-            # and the breakdown is for the origin airports (ADD, LOS, etc.)
-            # The user's request is about inbound flight from 01dec to 06dec, so I'll assume
-            # the breakdown is for the origin airports of the inbound flight.
+            if not date_val or not flight_no:
+                continue
             
-            # Since the manifest is for a specific flight (e.g., ET 620 ADD-KWI), 
-            # the route analysis page is likely concerned with the flow to/from the hub.
-            # I will use the manifest's direction for the ManualForecast record.
+            # Convert date
+            if isinstance(date_val, datetime):
+                flight_date = date_val.date()
+            else:
+                flight_date = datetime.strptime(str(date_val), '%Y-%m-%d').date()
             
-            existing_forecast = ManualForecast.query.filter_by(
-                travel_date=travel_date,
-                airport_code=airport_code,
-                direction=direction
+            # Get capacity (standard aircraft config)
+            # TODO: Make this configurable
+            total_cap = 180  # Example capacity
+            business_cap = 30
+            economy_cap = 150
+            
+            # Calculate load factors
+            lf = (total_pax / total_cap * 100) if total_cap > 0 else 0
+            lf_c = (business_pax / business_cap * 100) if business_cap > 0 else 0
+            lf_y = (economy_pax / economy_cap * 100) if economy_cap > 0 else 0
+            
+            # Parse route breakdown (if exists in column 7+)
+            route_breakdown = {}
+            # Example: Column 7 might have JSON or comma-separated "ADD:45,DXB:23"
+            
+            # Check if manifest already exists for this flight/date
+            existing = DailyManifest.query.filter_by(
+                flight_date=flight_date,
+                flight_number=flight_no
             ).first()
             
-            if existing_forecast:
-                # Only update if the existing record is a manual forecast
-                if existing_forecast.data_source == 'manual':
-                    existing_forecast.forecast_pax = pax_count
-                    existing_forecast.data_source = 'manifest'
-                    existing_forecast.last_updated = datetime.utcnow()
+            if existing:
+                # Update existing manifest
+                existing.total_passengers = total_pax
+                existing.business_passengers = business_pax
+                existing.economy_passengers = economy_pax
+                existing.total_capacity = total_cap
+                existing.business_capacity = business_cap
+                existing.economy_capacity = economy_cap
+                existing.load_factor = lf
+                existing.business_load_factor = lf_c
+                existing.economy_load_factor = lf_y
+                existing.route_breakdown = route_breakdown
+                existing.uploaded_at = datetime.utcnow()
+                existing.uploaded_by = session.get('admin_username')
+                existing.source = 'manifest'
             else:
-                # Create a new record from the manifest
-                new_forecast = ManualForecast(
-                    travel_date=travel_date,
-                    airport_code=airport_code,
-                    direction=direction,
-                    forecast_pax=pax_count,
-                    data_source='manifest'
+                # Create new manifest record
+                new_manifest = DailyManifest(
+                    flight_date=flight_date,
+                    flight_number=flight_no,
+                    direction=direction or ('inbound' if flight_no == '620' else 'outbound'),
+                    total_passengers=total_pax,
+                    business_passengers=business_pax,
+                    economy_passengers=economy_pax,
+                    total_capacity=total_cap,
+                    business_capacity=business_cap,
+                    economy_capacity=economy_cap,
+                    load_factor=lf,
+                    business_load_factor=lf_c,
+                    economy_load_factor=lf_y,
+                    route_breakdown=route_breakdown,
+                    uploaded_by=session.get('admin_username'),
+                    source='manifest'
                 )
-                db.session.add(new_forecast)
-        
-        # 2. Update/Create FlightLoadRecord with manifest data (Actual Load)
-        existing_load_record = FlightLoadRecord.query.filter_by(
-            travel_date=travel_date,
-            flight_no=flight_no
-        ).first()
-        
-        # Assuming capacity data is not in the manifest, we only update passenger counts
-        # If a forecast exists, we use its capacity data. Otherwise, capacity is 0.
-        capacity_data = {
-            'c_cap': existing_load_record.c_cap if existing_load_record else 0,
-            'y_cap': existing_load_record.y_cap if existing_load_record else 0,
-            'tot_cap': existing_load_record.tot_cap if existing_load_record else 0,
-        }
-        
-        # Calculate Load Factors based on manifest data
-        pax_c = manifest.c_class_passengers
-        pax_y = manifest.y_class_passengers
-        pax = manifest.total_passengers
-        
-        c_cap = capacity_data['c_cap']
-        y_cap = capacity_data['y_cap']
-        tot_cap = capacity_data['tot_cap']
-        
-        lf_c = (pax_c / c_cap) * 100 if c_cap > 0 else 0.0
-        lf_y = (pax_y / y_cap) * 100 if y_cap > 0 else 0.0
-        lf = (pax / tot_cap) * 100 if tot_cap > 0 else 0.0
-        
-        load_data = {
-            'pax_c': pax_c,
-            'pax_y': pax_y,
-            'pax': pax,
-            'lf_c': lf_c,
-            'lf_y': lf_y,
-            'lf': lf,
-            # Preserve capacity data
-            'c_cap': c_cap,
-            'y_cap': y_cap,
-            'tot_cap': tot_cap,
-        }
-        
-        if existing_load_record:
-            existing_load_record.update_from_dict(load_data)
-            existing_load_record.data_source = 'manifest'
-        else:
-            new_load_record = FlightLoadRecord(
-                travel_date=travel_date,
-                flight_no=flight_no,
-                data_source='manifest'
-            )
-            new_load_record.update_from_dict(load_data)
-            db.session.add(new_load_record)
+                db.session.add(new_manifest)
+            
+            records_processed += 1
         
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': f"Successfully processed {direction} manifest for {parsed_data['flight_number']} on {parsed_data['flight_date']}",
-            'data': manifest.to_dict()
+            'message': f'Successfully processed {records_processed} manifest records',
+            'records_processed': records_processed
         })
-        
+    
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@manifest_bp.route('/data', methods=['GET'])
+@manifest_bp.route('/api/manifest/data')
 def get_manifest_data():
-    """
-    Get manifest data with optional filtering
-    Query params: start_date, end_date, direction, flight_number
-    """
-    try:
-        from src.models.manifest import DailyManifest
-        
-        query = DailyManifest.query
-        
-        # Apply filters
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
-        direction = request.args.get('direction')
-        flight_number = request.args.get('flight_number')
-        
-        if start_date:
-            query = query.filter(DailyManifest.flight_date >= datetime.strptime(start_date, '%Y-%m-%d').date())
-        if end_date:
-            query = query.filter(DailyManifest.flight_date <= datetime.strptime(end_date, '%Y-%m-%d').date())
-        if direction:
-            query = query.filter(DailyManifest.direction == direction.upper())
-        if flight_number:
-            query = query.filter(DailyManifest.flight_number == flight_number)
-        
-        # Order by date descending
-        manifests = query.order_by(DailyManifest.flight_date.desc()).all()
-        
-        return jsonify({
-            'success': True,
-            'count': len(manifests),
-            'data': [m.to_dict() for m in manifests]
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+    """Get manifest data for date range"""
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    
+    query = DailyManifest.query
+    
+    if start_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        query = query.filter(DailyManifest.flight_date >= start_date)
+    
+    if end_date_str:
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        query = query.filter(DailyManifest.flight_date <= end_date)
+    
+    records = query.order_by(DailyManifest.flight_date).all()
+    
+    return jsonify({
+        'success': True,
+        'data': [r.to_dict() for r in records],
+        'total_passengers': sum(r.total_passengers for r in records),
+        'average_load_factor': sum(r.load_factor for r in records) / len(records) if records else 0,
+        'record_count': len(records)
+    })
 
-@manifest_bp.route('/charts/top-routes', methods=['GET'])
-def get_top_routes_chart():
+@manifest_bp.route('/api/forecast/save', methods=['POST'])
+@admin_required
+def save_forecast():
     """
-    Get top routes chart data
-    Query params: direction (INBOUND/OUTBOUND), days (default 30)
+    Save manual forecast data
+    This is SEPARATE from manifest data
     """
+    data = request.get_json()
+    forecasts = data.get('forecasts', [])
+    
     try:
-        from src.models.manifest import DailyManifest
-        from datetime import timedelta
+        saved_count = 0
         
-        direction = request.args.get('direction', 'INBOUND').upper()
-        days = int(request.args.get('days', 30))
-        
-        # Get manifests from last N days
-        start_date = datetime.utcnow().date() - timedelta(days=days)
-        manifests = DailyManifest.query.filter(
-            DailyManifest.direction == direction,
-            DailyManifest.flight_date >= start_date
-        ).all()
-        
-        # Aggregate route breakdown
-        route_totals = Counter()
-        for manifest in manifests:
-            breakdown = manifest.get_route_breakdown()
-            route_totals.update(breakdown)
-        
-        # Get top 10 routes with airport info
-        top_routes = []
-        for route_code, count in route_totals.most_common(10):
-            airport_info = get_airport_info(route_code)
-            top_routes.append({
-                'code': route_code,
-                'name': airport_info['name'] if airport_info else route_code,
-                'city': airport_info['city'] if airport_info else '',
-                'country': airport_info['country'] if airport_info else '',
-                'passengers': count
-            })
-        
-        return jsonify({
-            'success': True,
-            'direction': direction,
-            'period_days': days,
-            'routes': top_routes
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@manifest_bp.route('/charts/daily-trend', methods=['GET'])
-def get_daily_trend_chart():
-    """
-    Get daily passenger trend chart data
-    Query params: direction, days (default 30)
-    """
-    try:
-        from src.models.manifest import DailyManifest
-        from datetime import timedelta
-        
-        direction = request.args.get('direction')
-        days = int(request.args.get('days', 30))
-        
-        start_date = datetime.utcnow().date() - timedelta(days=days)
-        query = DailyManifest.query.filter(DailyManifest.flight_date >= start_date)
-        
-        if direction:
-            query = query.filter(DailyManifest.direction == direction.upper())
-        
-        manifests = query.order_by(DailyManifest.flight_date).all()
-        
-        # Group by date
-        daily_data = {}
-        for manifest in manifests:
-            date_str = manifest.flight_date.isoformat()
-            if date_str not in daily_data:
-                daily_data[date_str] = {
-                    'date': date_str,
-                    'inbound': 0,
-                    'outbound': 0,
-                    'total': 0
-                }
+        for forecast in forecasts:
+            forecast_date = datetime.strptime(forecast['date'], '%Y-%m-%d').date()
+            airport_code = forecast['airport_code']
+            direction = forecast['direction']
+            passengers = int(forecast['passengers'])
             
-            if manifest.direction == 'INBOUND':
-                daily_data[date_str]['inbound'] += manifest.total_passengers
+            # Check if forecast exists
+            existing = RouteForecast.query.filter_by(
+                forecast_date=forecast_date,
+                airport_code=airport_code,
+                direction=direction
+            ).first()
+            
+            if existing:
+                existing.passengers = passengers
+                existing.updated_at = datetime.utcnow()
+                existing.created_by = session.get('admin_username')
             else:
-                daily_data[date_str]['outbound'] += manifest.total_passengers
+                new_forecast = RouteForecast(
+                    forecast_date=forecast_date,
+                    airport_code=airport_code,
+                    direction=direction,
+                    passengers=passengers,
+                    created_by=session.get('admin_username')
+                )
+                db.session.add(new_forecast)
             
-            daily_data[date_str]['total'] += manifest.total_passengers
+            saved_count += 1
         
-        # Convert to list and sort by date
-        trend_data = sorted(daily_data.values(), key=lambda x: x['date'])
+        db.session.commit()
         
         return jsonify({
             'success': True,
-            'period_days': days,
-            'data': trend_data
+            'message': f'Successfully saved {saved_count} forecasts'
         })
-        
+    
     except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@manifest_bp.route('/api/forecast/data')
+def get_forecast_data():
+    """
+    Get combined forecast and manifest data
+    Manifest data (actuals) takes precedence over forecasts
+    """
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    direction = request.args.get('direction', 'inbound')
+    
+    if not start_date_str or not end_date_str:
+        return jsonify({'success': False, 'error': 'Date range required'}), 400
+    
+    start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    
+    # Get all dates in range
+    date_list = []
+    current_date = start_date
+    while current_date <= end_date:
+        date_list.append(current_date)
+        current_date += timedelta(days=1)
+    
+    # Get forecasts for date range
+    forecasts = RouteForecast.query.filter(
+        RouteForecast.forecast_date >= start_date,
+        RouteForecast.forecast_date <= end_date,
+        RouteForecast.direction == direction
+    ).all()
+    
+    # Get manifests for date range (actuals)
+    manifests = DailyManifest.query.filter(
+        DailyManifest.flight_date >= start_date,
+        DailyManifest.flight_date <= end_date,
+        DailyManifest.direction == direction
+    ).all()
+    
+    # Build combined data structure
+    # Group by airport and date
+    data_by_airport = defaultdict(lambda: defaultdict(lambda: {'passengers': 0, 'source': 'forecast', 'confirmed': False}))
+    
+    # First, add forecast data
+    for forecast in forecasts:
+        date_str = forecast.forecast_date.strftime('%Y-%m-%d')
+        data_by_airport[forecast.airport_code][date_str] = {
+            'passengers': forecast.passengers,
+            'source': 'forecast',
+            'confirmed': False
+        }
+    
+    # Then, override with manifest data (actuals) where available
+    manifest_dates = set()
+    for manifest in manifests:
+        date_str = manifest.flight_date.strftime('%Y-%m-%d')
+        manifest_dates.add(date_str)
+        
+        # Parse route breakdown
+        if manifest.route_breakdown:
+            for airport, pax_count in manifest.route_breakdown.items():
+                data_by_airport[airport][date_str] = {
+                    'passengers': pax_count,
+                    'source': 'manifest',
+                    'confirmed': True
+                }
+    
+    # Get all airports
+    airports = AirportMaster.query.filter_by(active=True).all()
+    airport_codes = [a.code for a in airports]
+    
+    # Add any airports from data that aren't in master list
+    for airport in data_by_airport.keys():
+        if airport not in airport_codes:
+            airport_codes.append(airport)
+    
+    # Build response
+    result = {
+        'dates': [d.strftime('%Y-%m-%d') for d in date_list],
+        'airports': sorted(airport_codes),
+        'data': dict(data_by_airport),
+        'manifest_dates': list(manifest_dates)
+    }
+    
+    return jsonify({
+        'success': True,
+        'result': result
+    })
+
+@manifest_bp.route('/api/airports/list')
+def list_airports():
+    """Get list of airports for dropdown"""
+    airports = AirportMaster.query.filter_by(active=True).order_by(AirportMaster.code).all()
+    return jsonify({
+        'success': True,
+        'airports': [a.to_dict() for a in airports]
+    })
+
+@manifest_bp.route('/api/airports/add', methods=['POST'])
+@admin_required
+def add_airport():
+    """Add new airport to master list"""
+    data = request.get_json()
+    code = data.get('code', '').upper().strip()
+    name = data.get('name', '').strip()
+    country = data.get('country', '').strip()
+    
+    if not code:
+        return jsonify({'success': False, 'error': 'Airport code required'}), 400
+    
+    # Check if exists
+    existing = AirportMaster.query.filter_by(code=code).first()
+    if existing:
+        return jsonify({'success': False, 'error': 'Airport code already exists'}), 400
+    
+    try:
+        new_airport = AirportMaster(
+            code=code,
+            name=name,
+            country=country,
+            active=True
+        )
+        db.session.add(new_airport)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'airport': new_airport.to_dict()
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
