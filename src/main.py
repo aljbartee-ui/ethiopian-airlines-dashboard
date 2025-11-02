@@ -1,16 +1,15 @@
 from flask import Flask, render_template, send_from_directory, redirect, url_for
-from src.models.sales import db
+from src.models.user import db, User, AdminUser
+from src.models.sales import SalesData
+from src.models.route_analysis import RouteAnalysisData, ManualForecast
+from src.models.manifest import DailyManifest
+from src.models.flight_load import FlightLoadRecord
 from src.routes.sales_working import sales_bp
 from src.routes.flight_load import flight_load_bp
 from src.routes.route_analysis import route_analysis_bp
 from src.routes.manifest import manifest_bp
 from src.routes.manual_forecast import manual_forecast_bp
 from src.routes.auth import auth_bp
-from src.models.user import User, AdminUser
-from src.models.sales import SalesData
-from src.models.route_analysis import RouteAnalysisData, ManualForecast
-from src.models.manifest import DailyManifest
-from src.models.flight_load import FlightLoadRecord
 import os
 
 app = Flask(__name__, 
