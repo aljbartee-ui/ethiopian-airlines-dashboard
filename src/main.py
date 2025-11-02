@@ -94,7 +94,7 @@ def manifest_dashboard():
     return send_from_directory(static_folder_path, 'manifest-dashboard.html')
 
 @app.route('/route-analysis')
-def route_analysis_redirect():
+def route_analysis_redirect(): 
     """Redirect old route-analysis URL to new location"""
     return redirect('/flight-load/route-analysis')
 
