@@ -4,10 +4,13 @@ from src.routes.sales_working import sales_bp
 from src.routes.flight_load import flight_load_bp
 from src.routes.route_analysis import route_analysis_bp
 from src.routes.manifest import manifest_bp
-from src.models.user import User
+from src.routes.manual_forecast import manual_forecast_bp
+from src.routes.auth import auth_bp
+from src.models.user import User, AdminUser
 from src.models.sales import SalesData
-from src.models.route_analysis import RouteAnalysisWeek, RouteAnalysisUpload
+from src.models.route_analysis import RouteAnalysisData, ManualForecast
 from src.models.manifest import DailyManifest
+from src.models.flight_load import FlightLoadRecord
 import os
 
 app = Flask(__name__, 
@@ -30,6 +33,8 @@ app.register_blueprint(sales_bp, url_prefix='/sales')
 app.register_blueprint(flight_load_bp, url_prefix='/flight-load')
 app.register_blueprint(route_analysis_bp, url_prefix='/flight-load/route-analysis')
 app.register_blueprint(manifest_bp, url_prefix='/flight-load/manifest')
+app.register_blueprint(manual_forecast_bp, url_prefix='/flight-load/manual-forecast')
+app.register_blueprint(auth_bp, url_prefix='/auth')
 
 # Create tables
 with app.app_context():
@@ -97,4 +102,3 @@ def route_analysis_redirect():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-
