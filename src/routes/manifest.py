@@ -1,8 +1,3 @@
-"""
-Daily Manifest Routes
-Handles manifest upload, parsing, and data retrieval
-"""
-
 from flask import Blueprint, request, jsonify
 import re
 from datetime import datetime
@@ -132,24 +127,27 @@ def upload_manifest():
         
         # Import here to avoid circular imports
         from src.models.manifest import DailyManifest
+        from src.models.flight_load import FlightLoadRecord
+        from src.models.route_analysis import ManualForecast
         
-        # Check if manifest already exists
-        existing = DailyManifest.query.filter_by(
+        flight_no = parsed_data['flight_number'].split(' ')[1] # Assuming "ET 620" -> "620"
+        travel_date = parsed_data['flight_date']
+        
+        # 1. Update/Create DailyManifest record
+        existing_manifest = DailyManifest.query.filter_by(
             flight_number=parsed_data['flight_number'],
-            flight_date=parsed_data['flight_date'],
+            flight_date=travel_date,
             direction=direction
         ).first()
         
-        if existing:
-            # Update existing manifest
-            manifest = existing
+        if existing_manifest:
+            manifest = existing_manifest
         else:
-            # Create new manifest
             manifest = DailyManifest()
         
         # Set all fields
         manifest.flight_number = parsed_data['flight_number']
-        manifest.flight_date = parsed_data['flight_date']
+        manifest.flight_date = travel_date
         manifest.direction = direction
         manifest.origin = parsed_data['origin']
         manifest.destination = parsed_data['destination']
@@ -165,8 +163,101 @@ def upload_manifest():
         manifest.set_route_breakdown(parsed_data['route_breakdown'])
         manifest.upload_date = datetime.utcnow()
         
-        if not existing:
+        if not existing_manifest:
             db.session.add(manifest)
+            
+        # 2. Update/Create FlightLoadRecord with manifest data (Actual Load)
+        # ... (existing logic for FlightLoadRecord) ...
+        
+        # 3. Update/Create ManualForecast records for each route in the breakdown
+        route_breakdown = manifest.get_route_breakdown()
+        
+        for airport_code, pax_count in route_breakdown.items():
+            # Determine direction based on the manifest's direction
+            # For simplicity, we'll assume the manifest direction is the direction of the passenger flow
+            # e.g., INBOUND manifest means passengers are inbound to the destination (KWI in the example)
+            # and the breakdown is for the origin airports (ADD, LOS, etc.)
+            # The user's request is about inbound flight from 01dec to 06dec, so I'll assume
+            # the breakdown is for the origin airports of the inbound flight.
+            
+            # Since the manifest is for a specific flight (e.g., ET 620 ADD-KWI), 
+            # the route analysis page is likely concerned with the flow to/from the hub.
+            # I will use the manifest's direction for the ManualForecast record.
+            
+            existing_forecast = ManualForecast.query.filter_by(
+                travel_date=travel_date,
+                airport_code=airport_code,
+                direction=direction
+            ).first()
+            
+            if existing_forecast:
+                # Only update if the existing record is a manual forecast
+                if existing_forecast.data_source == 'manual':
+                    existing_forecast.forecast_pax = pax_count
+                    existing_forecast.data_source = 'manifest'
+                    existing_forecast.last_updated = datetime.utcnow()
+            else:
+                # Create a new record from the manifest
+                new_forecast = ManualForecast(
+                    travel_date=travel_date,
+                    airport_code=airport_code,
+                    direction=direction,
+                    forecast_pax=pax_count,
+                    data_source='manifest'
+                )
+                db.session.add(new_forecast)
+        
+        # 2. Update/Create FlightLoadRecord with manifest data (Actual Load)
+        existing_load_record = FlightLoadRecord.query.filter_by(
+            travel_date=travel_date,
+            flight_no=flight_no
+        ).first()
+        
+        # Assuming capacity data is not in the manifest, we only update passenger counts
+        # If a forecast exists, we use its capacity data. Otherwise, capacity is 0.
+        capacity_data = {
+            'c_cap': existing_load_record.c_cap if existing_load_record else 0,
+            'y_cap': existing_load_record.y_cap if existing_load_record else 0,
+            'tot_cap': existing_load_record.tot_cap if existing_load_record else 0,
+        }
+        
+        # Calculate Load Factors based on manifest data
+        pax_c = manifest.c_class_passengers
+        pax_y = manifest.y_class_passengers
+        pax = manifest.total_passengers
+        
+        c_cap = capacity_data['c_cap']
+        y_cap = capacity_data['y_cap']
+        tot_cap = capacity_data['tot_cap']
+        
+        lf_c = (pax_c / c_cap) * 100 if c_cap > 0 else 0.0
+        lf_y = (pax_y / y_cap) * 100 if y_cap > 0 else 0.0
+        lf = (pax / tot_cap) * 100 if tot_cap > 0 else 0.0
+        
+        load_data = {
+            'pax_c': pax_c,
+            'pax_y': pax_y,
+            'pax': pax,
+            'lf_c': lf_c,
+            'lf_y': lf_y,
+            'lf': lf,
+            # Preserve capacity data
+            'c_cap': c_cap,
+            'y_cap': y_cap,
+            'tot_cap': tot_cap,
+        }
+        
+        if existing_load_record:
+            existing_load_record.update_from_dict(load_data)
+            existing_load_record.data_source = 'manifest'
+        else:
+            new_load_record = FlightLoadRecord(
+                travel_date=travel_date,
+                flight_no=flight_no,
+                data_source='manifest'
+            )
+            new_load_record.update_from_dict(load_data)
+            db.session.add(new_load_record)
         
         db.session.commit()
         
@@ -317,4 +408,3 @@ def get_daily_trend_chart():
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
-
