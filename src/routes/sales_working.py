@@ -1,184 +1,138 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, render_template, request, jsonify, session
 from src.models.user import db
 from src.models.sales import SalesData
-from src.models.user import AdminUser
-import os
-import json
 from datetime import datetime
-import base64
 import openpyxl
 from io import BytesIO
 
-sales_bp = Blueprint('sales', __name__)
+sales_bp = Blueprint('sales_working', __name__)
 
-def process_excel_file(file_content, filename):
-    """Process Excel file and extract data"""
-    try:
-        # Load workbook from bytes with data_only=True to read formula values
-        workbook = openpyxl.load_workbook(BytesIO(file_content), data_only=True)
-        
-        processed_data = {}
-        
-        for sheet_name in workbook.sheetnames:
-            sheet = workbook[sheet_name]
-            
-            # Get headers from first row
-            headers = []
-            for cell in sheet[1]:
-                headers.append(cell.value if cell.value is not None else '')
-            
-            # Get data rows
-            data_rows = []
-            for row in sheet.iter_rows(min_row=2, values_only=True):
-                if any(cell is not None for cell in row):  # Skip empty rows
-                    row_dict = {}
-                    for i, value in enumerate(row):
-                        if i < len(headers):
-                            # Convert datetime objects to strings
-                            if hasattr(value, 'strftime'):
-                                value = value.strftime('%Y-%m-%d %H:%M:%S')
-                            row_dict[headers[i]] = value
-                    data_rows.append(row_dict)
-            
-            processed_data[sheet_name] = {
-                'headers': headers,
-                'data': data_rows,
-                'row_count': len(data_rows)
-            }
-        
-        return processed_data
-        
-    except Exception as e:
-        print(f"Error processing Excel file: {e}")
-        raise e
+def admin_required(f):
+    """Decorator to require admin authentication"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            return jsonify({'success': False, 'error': 'Admin authentication required'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
 
-@sales_bp.route('/data')
-def get_current_data():
-    """Get information about the current active dataset"""
-    try:
-        active_data = SalesData.query.filter_by(is_active=True).first()
-        if active_data:
-            data = active_data.get_data()
-            sheets = list(data.keys()) if data else []
-            return jsonify({
-                'filename': active_data.filename,
-                'upload_date': active_data.upload_date.isoformat(),
-                'sheets': sheets,
-                'total_rows': sum(sheet_data.get('row_count', 0) for sheet_data in data.values()) if data else 0
-            })
-        else:
-            return jsonify({'error': 'No data available'}), 404
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@sales_bp.route('/dashboard')
+def dashboard():
+    """Sales dashboard page"""
+    return render_template('sales_dashboard.html')
 
-from src.routes.auth import admin_required
-
-@sales_bp.route('/upload', methods=['POST'])
-@admin_required
-def upload_file():
-    """Handle Excel file upload (admin only)"""
+@sales_bp.route('/api/sales/login', methods=['POST'])
+def admin_login():
+    """Admin login endpoint"""
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
     
+    # Simple admin check (in production, use proper authentication)
+    if username == 'al.jbartee@gmail.com' and password == 'B1m2a3i4!':
+        session['admin_logged_in'] = True
+        session['admin_username'] = username
+        return jsonify({'success': True})
+    
+    return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
+
+@sales_bp.route('/api/sales/logout', methods=['POST'])
+def admin_logout():
+    """Admin logout endpoint"""
+    session.pop('admin_logged_in', None)
+    session.pop('admin_username', None)
+    return jsonify({'success': True})
+
+@sales_bp.route('/api/sales/check-auth')
+def check_auth():
+    """Check if admin is logged in"""
+    return jsonify({
+        'authenticated': session.get('admin_logged_in', False),
+        'username': session.get('admin_username')
+    })
+
+@sales_bp.route('/api/sales/upload', methods=['POST'])
+@admin_required
+def upload_sales():
+    """Upload sales data - ADMIN ONLY"""
     if 'file' not in request.files:
-        return jsonify({'error': 'No file provided'}), 400
+        return jsonify({'success': False, 'error': 'No file provided'}), 400
     
     file = request.files['file']
     if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-    
-    if not file.filename.lower().endswith(('.xlsx', '.xls')):
-        return jsonify({'error': 'Invalid file type. Please upload Excel files only.'}), 400
+        return jsonify({'success': False, 'error': 'No file selected'}), 400
     
     try:
         # Read file content
         file_content = file.read()
+        workbook = openpyxl.load_workbook(BytesIO(file_content), data_only=True)
+        sheet = workbook.active
         
-        # Process Excel file
-        processed_data = process_excel_file(file_content, file.filename)
+        records_added = 0
         
-        if not processed_data:
-            return jsonify({'error': 'No data found in Excel file'}), 400
+        # Process Excel data (starting from row 2, assuming row 1 is headers)
+        for row_idx in range(2, sheet.max_row + 1):
+            date_val = sheet.cell(row_idx, 1).value
+            revenue = sheet.cell(row_idx, 2).value
+            passengers = sheet.cell(row_idx, 3).value
+            
+            if date_val and revenue is not None:
+                # Convert date if needed
+                if isinstance(date_val, datetime):
+                    sale_date = date_val.date()
+                else:
+                    sale_date = datetime.strptime(str(date_val), '%Y-%m-%d').date()
+                
+                # Check if record exists
+                existing = SalesData.query.filter_by(sale_date=sale_date).first()
+                if existing:
+                    existing.revenue = float(revenue)
+                    existing.passengers = int(passengers) if passengers else 0
+                else:
+                    new_record = SalesData(
+                        sale_date=sale_date,
+                        revenue=float(revenue),
+                        passengers=int(passengers) if passengers else 0
+                    )
+                    db.session.add(new_record)
+                records_added += 1
         
-        # Deactivate all previous data
-        SalesData.query.update({'is_active': False})
-        
-        # Create new sales data entry
-        sales_data = SalesData(
-            filename=file.filename,
-            data_json=json.dumps(processed_data),
-            is_active=True
-        )
-        
-        db.session.add(sales_data)
         db.session.commit()
         
-        # Calculate summary statistics
-        total_rows = sum(sheet_data.get('row_count', 0) for sheet_data in processed_data.values())
-        sheets = list(processed_data.keys())
-        
         return jsonify({
-            'message': 'File uploaded and processed successfully',
-            'filename': file.filename,
-            'data_id': sales_data.id,
-            'sheets': sheets,
-            'total_rows': total_rows,
-            'summary': {
-                'sheets_processed': len(sheets),
-                'total_data_rows': total_rows
-            }
+            'success': True,
+            'message': f'Successfully processed {records_added} records'
         })
-        
+    
     except Exception as e:
         db.session.rollback()
-        print(f"Upload error: {e}")
-        return jsonify({'error': f'Error processing file: {str(e)}'}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
-@sales_bp.route('/charts/default')
-def generate_default_charts():
-    """Generate default charts from the active dataset"""
-    try:
-        active_data = SalesData.query.filter_by(is_active=True).first()
-        if not active_data:
-            return jsonify({'error': 'No active dataset found'}), 404
-        
-        # Get the actual data
-        data = active_data.get_data()
-        if not data:
-            return jsonify({'error': 'No data available'}), 404
-        
-        # Return success message for now - charts will be generated by the charts endpoint
-        return jsonify({
-            'message': 'Data is ready for chart generation',
-            'sheets': list(data.keys()),
-            'total_rows': sum(sheet_data.get('row_count', 0) for sheet_data in data.values())
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@sales_bp.route('/api/sales/data')
+@admin_required
+def get_sales_data():
+    """Get sales data - ADMIN ONLY (FIXED: Added authentication)"""
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    
+    query = SalesData.query
+    
+    if start_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        query = query.filter(SalesData.sale_date >= start_date)
+    
+    if end_date_str:
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        query = query.filter(SalesData.sale_date <= end_date)
+    
+    records = query.order_by(SalesData.sale_date).all()
+    
+    return jsonify({
+        'success': True,
+        'data': [r.to_dict() for r in records],
+        'total_revenue': sum(r.revenue for r in records),
+        'total_passengers': sum(r.passengers for r in records),
+        'record_count': len(records)
+    })
 
-@sales_bp.route('/debug/data')
-def debug_data():
-    """Debug endpoint to check data structure"""
-    try:
-        active_data = SalesData.query.filter_by(is_active=True).first()
-        if not active_data:
-            return jsonify({'error': 'No active dataset found'}), 404
-        
-        data = active_data.get_data()
-        
-        # Return structure info
-        debug_info = {}
-        for sheet_name, sheet_data in data.items():
-            debug_info[sheet_name] = {
-                'headers': sheet_data.get('headers', []),
-                'row_count': sheet_data.get('row_count', 0),
-                'sample_row': sheet_data.get('data', [{}])[0] if sheet_data.get('data') else {}
-            }
-        
-        return jsonify({
-            'filename': active_data.filename,
-            'upload_date': active_data.upload_date.isoformat(),
-            'debug_info': debug_info
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
