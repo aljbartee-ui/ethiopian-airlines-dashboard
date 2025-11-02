@@ -12,9 +12,10 @@ from src.routes.manual_forecast import manual_forecast_bp
 from src.routes.auth import auth_bp
 import os
 
+# FIXED: Correct paths for static and template folders
 app = Flask(__name__, 
-            static_folder='src/static',
-            template_folder='src/templates')
+            static_folder='static',
+            template_folder='templates')
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'ethiopian-airlines-secret-key-2025')
@@ -94,7 +95,7 @@ def manifest_dashboard():
     return send_from_directory(static_folder_path, 'manifest-dashboard.html')
 
 @app.route('/route-analysis')
-def route_analysis_redirect(): 
+def route_analysis_redirect():
     """Redirect old route-analysis URL to new location"""
     return redirect('/flight-load/route-analysis')
 
