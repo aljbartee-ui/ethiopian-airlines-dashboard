@@ -5,7 +5,7 @@ from src.routes.flight_load import flight_load_bp
 from src.routes.route_analysis import route_analysis_bp
 from src.routes.manifest import manifest_bp
 # from src.routes.manual_forecast import manual_forecast_bp # Removed: Integrated into manifest.py
-from src.routes.auth import auth_bp
+# removed from src.routes.auth import auth_bp
 from src.models.user import User, AdminUser
 from src.models.sales import SalesData
 from src.models.route_analysis import RouteAnalysisData, ManualForecast
