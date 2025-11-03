@@ -34,8 +34,7 @@ app.register_blueprint(flight_load_bp, url_prefix='/flight-load')
 app.register_blueprint(route_analysis_bp, url_prefix='/flight-load/route-analysis')
 app.register_blueprint(manifest_bp, url_prefix='/flight-load/manifest')
 # app.register_blueprint(manual_forecast_bp, url_prefix='/flight-load/manual-forecast') # Removed: Integrated into manifest.py
-app.register_blueprint(auth_bp, url_prefix='/auth')
-
+# remove app.register_blueprint(auth_bp, url_prefix='/auth')
 # Create tables
 with app.app_context():
     db.create_all()
