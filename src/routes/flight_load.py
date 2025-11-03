@@ -1,5 +1,4 @@
 from flask import Blueprint, request, jsonify, session
-from src.routes.auth import admin_required
 from src.models.user import db
 from src.models.flight_load import FlightLoadRecord
 import openpyxl
