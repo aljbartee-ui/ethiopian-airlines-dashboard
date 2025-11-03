@@ -4,7 +4,7 @@ from src.routes.sales_working import sales_bp
 from src.routes.flight_load import flight_load_bp
 from src.routes.route_analysis import route_analysis_bp
 from src.routes.manifest import manifest_bp
-from src.routes.manual_forecast import manual_forecast_bp
+# from src.routes.manual_forecast import manual_forecast_bp # Removed: Integrated into manifest.py
 from src.routes.auth import auth_bp
 from src.models.user import User, AdminUser
 from src.models.sales import SalesData
@@ -33,7 +33,7 @@ app.register_blueprint(sales_bp, url_prefix='/sales')
 app.register_blueprint(flight_load_bp, url_prefix='/flight-load')
 app.register_blueprint(route_analysis_bp, url_prefix='/flight-load/route-analysis')
 app.register_blueprint(manifest_bp, url_prefix='/flight-load/manifest')
-app.register_blueprint(manual_forecast_bp, url_prefix='/flight-load/manual-forecast')
+# app.register_blueprint(manual_forecast_bp, url_prefix='/flight-load/manual-forecast') # Removed: Integrated into manifest.py
 app.register_blueprint(auth_bp, url_prefix='/auth')
 
 # Create tables
