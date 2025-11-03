@@ -104,7 +104,6 @@ def process_flight_load_excel(file_content, filename):
         raise e
 
 @flight_load_bp.route('/upload', methods=['POST'])
-@admin_required
 def upload_flight_load():
     """Handle Load Factor Excel file upload (admin only) - Forecast Data"""
     
