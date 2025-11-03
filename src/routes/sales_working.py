@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 from src.models.user import db
-from src.models.sales import SalesData
-from src.models.user import AdminUser
+from src.models.sales import SalesData, AdminUser
 import os
 import json
 from datetime import datetime
@@ -14,8 +13,8 @@ sales_bp = Blueprint('sales', __name__)
 def process_excel_file(file_content, filename):
     """Process Excel file and extract data"""
     try:
-        # Load workbook from bytes with data_only=True to read formula values
-        workbook = openpyxl.load_workbook(BytesIO(file_content), data_only=True)
+        # Load workbook from bytes
+        workbook = openpyxl.load_workbook(BytesIO(file_content))
         
         processed_data = {}
         
@@ -71,20 +70,11 @@ def get_current_data():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Admin authentication decorator
-def admin_required(f):
-    from functools import wraps
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('admin_logged_in'):
-            return jsonify({'success': False, 'error': 'Admin authentication required'}), 401
-        return f(*args, **kwargs)
-    return decorated_function
-
 @sales_bp.route('/upload', methods=['POST'])
-@admin_required
 def upload_file():
     """Handle Excel file upload (admin only)"""
+    if not session.get('admin_logged_in'):
+        return jsonify({'error': 'Admin authentication required'}), 401
     
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400

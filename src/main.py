@@ -1,103 +1,48 @@
-from flask import Flask, render_template, send_from_directory, redirect, url_for
-from src.models.sales import db
-from src.routes.sales_working import sales_bp
-from src.routes.flight_load import flight_load_bp
-from src.routes.route_analysis import route_analysis_bp
-from src.routes.manifest import manifest_bp
-# from src.routes.manual_forecast import manual_forecast_bp # Removed: Integrated into manifest.py
-# removed from src.routes.auth import auth_bp
-from src.models.user import User, AdminUser
-from src.models.sales import SalesData
-from src.models.route_analysis import RouteAnalysisData, ManualForecast
-from src.models.manifest import DailyManifest
-from src.models.flight_load import FlightLoadRecord
 import os
+import sys
+# DON'T CHANGE THIS !!!
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-app = Flask(__name__, 
-            static_folder='static',
-            template_folder='templates')
+from flask import Flask, send_from_directory
+from src.models.user import db
+from src.models.sales import SalesData, AdminUser
+from src.routes.user import user_bp
+from src.routes.admin_fixed import admin_bp
+from src.routes.sales_working import sales_bp
+from src.routes.charts_redesigned import charts_bp
 
-# Configuration
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'ethiopian-airlines-secret-key-2025')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///ethiopian_airlines.db')
-if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://', 1)
+app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+app.register_blueprint(user_bp, url_prefix='/api')
+app.register_blueprint(admin_bp, url_prefix='/api')
+app.register_blueprint(sales_bp, url_prefix='/api')
+app.register_blueprint(charts_bp, url_prefix='/api')
+
+# uncomment if you need to use database
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
-
-# Initialize database
 db.init_app(app)
-
-# Register blueprints
-app.register_blueprint(sales_bp, url_prefix='/sales')
-app.register_blueprint(flight_load_bp, url_prefix='/flight-load')
-app.register_blueprint(route_analysis_bp, url_prefix='/flight-load/route-analysis')
-app.register_blueprint(manifest_bp, url_prefix='/flight-load/manifest')
-# app.register_blueprint(manual_forecast_bp, url_prefix='/flight-load/manual-forecast') # Removed: Integrated into manifest.py
-# remove app.register_blueprint(auth_bp, url_prefix='/auth')
-# Create tables
 with app.app_context():
     db.create_all()
-    print("✅ Database tables created successfully")
 
-@app.route('/')
-def index():
-    """Serve the home page"""
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
     static_folder_path = app.static_folder
     if static_folder_path is None:
-        return "Static folder not configured", 404
-    return send_from_directory(static_folder_path, 'index.html')
+            return "Static folder not configured", 404
 
-@app.route('/dashboard')
-def dashboard():
-    """Serve the sales dashboard"""
-    static_folder_path = app.static_folder
-    if static_folder_path is None:
-        return "Static folder not configured", 404
-    return send_from_directory(static_folder_path, 'dashboard.html')
+    if path != "" and os.path.exists(os.path.join(static_folder_path, path)):
+        return send_from_directory(static_folder_path, path)
+    else:
+        index_path = os.path.join(static_folder_path, 'index.html')
+        if os.path.exists(index_path):
+            return send_from_directory(static_folder_path, 'index.html')
+        else:
+            return "index.html not found", 404
 
-@app.route('/flight-load-dashboard')
-def flight_load_dashboard():
-    """Redirect to flight load menu"""
-    return redirect('/flight-load/menu')
-
-@app.route('/flight-load/menu')
-def flight_load_menu():
-    """Serve the flight load menu page"""
-    static_folder_path = app.static_folder
-    if static_folder_path is None:
-        return "Static folder not configured", 404
-    return send_from_directory(static_folder_path, 'flight-load-menu.html')
-
-@app.route('/flight-load/load-factor')
-def flight_load_factor():
-    """Serve the flight load factor dashboard"""
-    static_folder_path = app.static_folder
-    if static_folder_path is None:
-        return "Static folder not configured", 404
-    return send_from_directory(static_folder_path, 'flight-load-factor.html')
-
-@app.route('/flight-load/route-analysis')
-def flight_load_route_analysis():
-    """Serve the route analysis dashboard"""
-    static_folder_path = app.static_folder
-    if static_folder_path is None:
-        return "Static folder not configured", 404
-    return send_from_directory(static_folder_path, 'flight-load-route-analysis.html')
-
-@app.route('/flight-load/manifest-dashboard')
-def manifest_dashboard():
-    """Serve the manifest dashboard"""
-    static_folder_path = app.static_folder
-    if static_folder_path is None:
-        return "Static folder not configured", 404
-    return send_from_directory(static_folder_path, 'manifest-dashboard.html')
-
-@app.route('/route-analysis')
-def route_analysis_redirect():
-    """Redirect old route-analysis URL to new location"""
-    return redirect('/flight-load/route-analysis')
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=True)
