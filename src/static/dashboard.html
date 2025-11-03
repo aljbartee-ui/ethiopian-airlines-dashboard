@@ -1210,12 +1210,10 @@
                         </div>
                     `;
                     // Render both charts
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            renderChartJS(chartInfo.id, 'revenue', revenueData);
-                            renderChartJS(chartInfo.id, 'tickets', ticketsData);
-                        });
-                    });
+                    setTimeout(() => {
+                        renderChartJS(chartInfo.id, 'revenue', revenueData);
+                        renderChartJS(chartInfo.id, 'tickets', ticketsData);
+                    }, 100);
                 }
             } else {
                 const chartData = await generateChart(chartInfo.id, config.dataMode);
@@ -1226,9 +1224,7 @@
                         </div>
                     `;
                     // Render Chart.js chart after DOM update
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => renderChartJS(chartInfo.id, config.dataMode, chartData));
-                    });
+                    setTimeout(() => renderChartJS(chartInfo.id, config.dataMode, chartData), 100);
                 }
             }
             

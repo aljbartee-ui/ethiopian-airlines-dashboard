@@ -421,3 +421,67 @@ def get_chart_options():
         ]
     })
 
+
+
+
+# New JSON endpoints for interactive charts (added for Chart.js support)
+@charts_bp.route('/charts/data/<chart_id>')
+def get_chart_data_json(chart_id):
+    """Get chart data as JSON for Chart.js (keeps SVG endpoints working too)"""
+    # Check if user is authenticated (either admin or public)
+    is_admin = session.get('admin_logged_in', False)
+    is_public = session.get('public_authenticated', False)
+    
+    if not is_admin and not is_public:
+        return jsonify({'error': 'Authentication required', 'labels': [], 'data': []}), 401
+    
+    try:
+        # Get parameters
+        data_mode = request.args.get('data_mode', 'revenue')
+        time_mode = request.args.get('time_mode', 'daily')
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        # Get active sales data
+        active_data = SalesData.query.filter_by(is_active=True).first()
+        if not active_data:
+            return jsonify({'error': 'No active sales data found', 'labels': [], 'data': []}), 200
+        
+        data = active_data.get_data()
+        if not data:
+            return jsonify({'error': 'No data available', 'labels': [], 'data': []}), 200
+        
+        # Process data for the specific chart
+        chart_data = process_chart_data(data, chart_id, data_mode, time_mode, start_date, end_date)
+        
+        if not chart_data:
+            return jsonify({'labels': [], 'data': []}), 200
+        
+        # Convert to Chart.js format
+        labels = list(chart_data.keys())
+        values = list(chart_data.values())
+        
+        # Calculate total for current data_mode
+        total = sum(values)
+        
+        # Also calculate total for the other data_mode
+        other_mode = 'tickets' if data_mode == 'revenue' else 'revenue'
+        other_chart_data = process_chart_data(data, chart_id, other_mode, time_mode, start_date, end_date)
+        other_total = sum(other_chart_data.values()) if other_chart_data else 0
+        
+        return jsonify({
+            'success': True,
+            'labels': labels,
+            'data': values,
+            'total': total,
+            'total_revenue': total if data_mode == 'revenue' else other_total,
+            'total_tickets': total if data_mode == 'tickets' else other_total,
+            'data_mode': data_mode,
+            'time_mode': time_mode if chart_id == 'by_report' else None,
+            'chart_id': chart_id
+        })
+        
+    except Exception as e:
+        print(f"Error getting chart data: {e}")
+        return jsonify({'error': str(e), 'labels': [], 'data': []}), 200
+
