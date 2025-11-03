@@ -71,7 +71,15 @@ def get_current_data():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-from src.routes.auth import admin_required
+# Admin authentication decorator
+def admin_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            return jsonify({'success': False, 'error': 'Admin authentication required'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
 
 @sales_bp.route('/upload', methods=['POST'])
 @admin_required
