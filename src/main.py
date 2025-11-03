@@ -10,7 +10,6 @@ from src.routes.user import user_bp
 from src.routes.admin_fixed import admin_bp
 from src.routes.sales_working import sales_bp
 from src.routes.charts_redesigned import charts_bp
-from src.routes.public_auth import public_auth_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -20,7 +19,6 @@ app.register_blueprint(user_bp, url_prefix='/api')
 app.register_blueprint(admin_bp, url_prefix='/api')
 app.register_blueprint(sales_bp, url_prefix='/api')
 app.register_blueprint(charts_bp, url_prefix='/api')
-app.register_blueprint(public_auth_bp, url_prefix='/api')
 
 # uncomment if you need to use database
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}"
