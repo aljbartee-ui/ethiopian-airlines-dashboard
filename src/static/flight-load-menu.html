@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Load Analytics - Ethiopian Airlines</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --et-green: #5C8C4C;
+            --et-yellow: #FCCC2C;
+            --et-red: #C4242B;
+            --et-dark-green: #3a5a2f;
+            --et-light-green: #7ba66b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a2f1a 0%, #2d4a2d 50%, #1f3520 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeIn 0.8s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo-stripes {
+            display: inline-flex;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+
+        .logo-stripe {
+            width: 6px;
+            height: 60px;
+            border-radius: 3px;
+        }
+
+        .stripe-green { background: var(--et-green); }
+        .stripe-yellow { background: var(--et-yellow); }
+        .stripe-red { background: var(--et-red); }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--et-green) 0%, var(--et-yellow) 50%, var(--et-red) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 300;
+        }
+
+        /* Back Button */
+        .back-button {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(92, 140, 76, 0.3);
+            border-radius: 12px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+        }
+
+        .back-button:hover {
+            background: rgba(92, 140, 76, 0.3);
+            border-color: var(--et-green);
+            transform: translateX(-5px);
+        }
+
+        /* Options Grid */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 35px;
+            margin-top: 50px;
+            animation: slideUp 1s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Option Card */
+        .option-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 28px;
+            padding: 45px 35px;
+            border: 2px solid rgba(92, 140, 76, 0.2);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+        }
+
+        .option-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--et-green), var(--et-yellow), var(--et-red));
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+
+        .option-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .option-card:hover {
+            transform: translateY(-15px) scale(1.03);
+            box-shadow: 0 25px 70px rgba(92, 140, 76, 0.5);
+            border-color: var(--et-green);
+        }
+
+        .option-icon {
+            width: 85px;
+            height: 85px;
+            margin: 0 auto 25px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--et-green), var(--et-yellow));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.8rem;
+            box-shadow: 0 8px 30px rgba(92, 140, 76, 0.5);
+        }
+
+        .option-card:nth-child(2) .option-icon {
+            background: linear-gradient(135deg, var(--et-yellow), var(--et-red));
+        }
+
+        .option-card:nth-child(3) .option-icon {
+            background: linear-gradient(135deg, var(--et-red), var(--et-green));
+        }
+
+        .option-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .option-description {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            line-height: 1.7;
+            margin-bottom: 25px;
+        }
+
+        .option-features {
+            list-style: none;
+            margin-top: 20px;
+        }
+
+        .option-features li {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.92rem;
+            padding: 7px 0;
+            padding-left: 28px;
+            position: relative;
+        }
+
+        .option-features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--et-green);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .option-badge {
+            display: inline-block;
+            padding: 7px 18px;
+            border-radius: 50px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 15px;
+            background: rgba(92, 140, 76, 0.3);
+            border: 2px solid var(--et-green);
+            color: var(--et-green);
+        }
+
+        .option-badge.new {
+            background: rgba(252, 204, 44, 0.3);
+            border-color: var(--et-yellow);
+            color: var(--et-yellow);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .option-card {
+                padding: 35px 25px;
+            }
+
+            .back-button {
+                top: 15px;
+                left: 15px;
+                padding: 10px 18px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-button">
+        ← Back to Home
+    </a>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-stripes">
+                <div class="logo-stripe stripe-green"></div>
+                <div class="logo-stripe stripe-yellow"></div>
+                <div class="logo-stripe stripe-red"></div>
+            </div>
+            <h1>Flight Load Analytics</h1>
+            <p>Choose your analysis type</p>
+        </div>
+
+        <!-- Options Grid -->
+        <div class="options-grid">
+            <!-- Load Factor Option -->
+            <a href="/flight-load/load-factor" class="option-card">
+                <div class="option-icon">📈</div>
+                <div class="option-title">Load Factor</div>
+                <div class="option-description">
+                    Monitor flight capacity utilization, passenger load factors, and occupancy rates across your fleet.
+                </div>
+                <ul class="option-features">
+                    <li>Real-time load factor tracking</li>
+                    <li>Capacity utilization metrics</li>
+                    <li>Historical trend analysis</li>
+                    <li>Date-based filtering</li>
+                </ul>
+                <div style="text-align: center;">
+                    <span class="option-badge">Active</span>
+                </div>
+            </a>
+
+            <!-- Route Analysis Option -->
+            <a href="/flight-load/route-analysis" class="option-card">
+                <div class="option-icon">🌍</div>
+                <div class="option-title">Route Analysis (Excel)</div>
+                <div class="option-description">
+                    Analyze weekly passenger traffic by route using Excel files with multiple sheets.
+                </div>
+                <ul class="option-features">
+                    <li>Weekly passenger traffic analysis</li>
+                    <li>Week-over-week growth tracking</li>
+                    <li>Top routes identification</li>
+                    <li>Daily trend visualization</li>
+                </ul>
+                <div style="text-align: center;">
+                    <span class="option-badge">Active</span>
+                </div>
+            </a>
+
+            <!-- Manifest Dashboard Option (NEW!) -->
+            <a href="/flight-load/manifest-dashboard" class="option-card">
+                <div class="option-icon">📋</div>
+                <div class="option-title">Route Analysis (Manifest)</div>
+                <div class="option-description">
+                    Daily manifest upload for fast route analytics. Upload inbound and outbound manifests to track passenger origins and destinations.
+                </div>
+                <ul class="option-features">
+                    <li>Fast 2-second uploads</li>
+                    <li>Top origins & destinations</li>
+                    <li>Daily passenger trends</li>
+                    <li>Historical data (7-365 days)</li>
+                </ul>
+                <div style="text-align: center;">
+                    <span class="option-badge new">New!</span>
+                </div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>
+

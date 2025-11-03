@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .card h2 {
+            color: #4080FF;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .admin-section {
+            display: none;
+        }
+
+        .admin-section.active {
+            display: block;
+        }
+
+        .public-section {
+            display: block;
+        }
+
+        .public-section.hidden {
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4080FF;
+            box-shadow: 0 0 0 3px rgba(64, 128, 255, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4080FF, #57A9FB);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(64, 128, 255, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #868e96);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #e55563);
+        }
+
+        .file-upload {
+            border: 2px dashed #4080FF;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            background: #f0f4ff;
+            border-color: #57A9FB;
+        }
+
+        .file-upload.dragover {
+            background: #e6f0ff;
+            border-color: #37D4CF;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .chart-container:hover {
+            transform: translateY(-3px);
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+        }
+
+        .chart-image {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .status-online {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4080FF;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #cce7ff;
+            color: #004085;
+            border: 1px solid #b3d7ff;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .flex {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-20 {
+            margin-top: 20px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .no-data h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #999;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Sales Dashboard</h1>
+            <p>Dynamic Excel Report Visualization</p>
+        </div>
+
+        <!-- Admin Status -->
+        <div class="card">
+            <div class="flex-between">
+                <h2>System Status</h2>
+                <div id="admin-status" class="status-indicator status-offline">
+                    <span>●</span>
+                    <span>Checking...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Login -->
+        <div id="login-section" class="card">
+            <h2>Admin Login</h2>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" placeholder="Enter admin username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter admin password">
+            </div>
+            <button class="btn" onclick="adminLogin()">
+                <span>🔐</span>
+                Login as Admin
+            </button>
+            <div id="login-result" class="mt-20"></div>
+        </div>
+
+        <!-- Admin Panel -->
+        <div id="admin-panel" class="admin-section">
+            <div class="card">
+                <div class="flex-between">
+                    <h2>Admin Panel</h2>
+                    <button class="btn btn-secondary" onclick="adminLogout()">
+                        <span>🚪</span>
+                        Logout
+                    </button>
+                </div>
+                
+                <div class="file-upload" id="file-upload" onclick="document.getElementById('file-input').click()">
+                    <input type="file" id="file-input" accept=".xlsx,.xls" style="display: none;" onchange="handleFileSelect(event)">
+                    <div>
+                        <h3>📁 Upload Excel File</h3>
+                        <p>Click here or drag and drop your sales report (.xlsx, .xls)</p>
+                        <p style="font-size: 14px; color: #666; margin-top: 10px;">Maximum file size: 16MB</p>
+                    </div>
+                </div>
+                
+                <div id="upload-result" class="mt-20"></div>
+                
+                <div class="mt-20">
+                    <button class="btn" onclick="generateDefaultCharts()">
+                        <span>📈</span>
+                        Generate Charts
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Public Charts Display -->
+        <div id="charts-section" class="public-section">
+            <div class="card">
+                <div class="flex-between">
+                    <h2>Sales Analytics</h2>
+                    <button class="btn" onclick="refreshCharts()">
+                        <span>🔄</span>
+                        Refresh
+                    </button>
+                </div>
+                <div id="data-info"></div>
+            </div>
+            
+            <div id="charts-container">
+                <div class="no-data">
+                    <h3>No Data Available</h3>
+                    <p>Please contact the administrator to upload sales data.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isAdmin = false;
+        let currentData = null;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminStatus();
+            loadCurrentData();
+            setupFileUpload();
+        });
+
+        // Check admin authentication status
+        async function checkAdminStatus() {
+            try {
+                const response = await fetch('/api/admin/status');
+                const data = await response.json();
+                
+                if (data.logged_in) {
+                    isAdmin = true;
+                    document.getElementById('admin-status').innerHTML = '<span>●</span><span>Admin Online</span>';
+                    document.getElementById('admin-status').className = 'status-indicator status-online';
+                    document.getElementById('login-section').style.display = 'none';
+                    document.getElementById('admin-panel').classList.add('active');
+                } else {
+                    isAdmin = false;
+                    document.getElementById('admin-status').innerHTML = '<span>●</span><span>Public Mode</span>';
+                    document.getElementById('admin-status').className = 'status-indicator status-offline';
+                }
+            } catch (error) {
+                console.error('Error checking admin status:', error);
+                showAlert('Error checking admin status', 'error');
+            }
+        }
+
+        // Admin login
+        async function adminLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showAlert('Please enter both username and password', 'error', 'login-result');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('Login successful!', 'success', 'login-result');
+                    setTimeout(() => {
+                        checkAdminStatus();
+                        document.getElementById('username').value = '';
+                        document.getElementById('password').value = '';
+                    }, 1000);
+                } else {
+                    showAlert(data.error || 'Login failed', 'error', 'login-result');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('Login error occurred', 'error', 'login-result');
+            }
+        }
+
+        // Admin logout
+        async function adminLogout() {
+            try {
+                await fetch('/api/admin/logout', { method: 'POST' });
+                isAdmin = false;
+                document.getElementById('admin-panel').classList.remove('active');
+                document.getElementById('login-section').style.display = 'block';
+                checkAdminStatus();
+                showAlert('Logged out successfully', 'info', 'login-result');
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        // Setup file upload drag and drop
+        function setupFileUpload() {
+            const fileUpload = document.getElementById('file-upload');
+            
+            fileUpload.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                fileUpload.classList.add('dragover');
+            });
+            
+            fileUpload.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                fileUpload.classList.remove('dragover');
+            });
+            
+            fileUpload.addEventListener('drop', function(e) {
+                e.preventDefault();
+                fileUpload.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileUpload(files[0]);
+                }
+            });
+        }
+
+        // Handle file selection
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFileUpload(file);
+            }
+        }
+
+        // Handle file upload
+        async function handleFileUpload(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                showAlert('Please select a valid Excel file (.xlsx or .xls)', 'error', 'upload-result');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                showAlert('Uploading and processing file...', 'info', 'upload-result');
+                
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(`File "${data.filename}" uploaded successfully! Found ${data.sheets.length} sheet(s).`, 'success', 'upload-result');
+                    loadCurrentData();
+                } else {
+                    showAlert(data.error || 'Upload failed', 'error', 'upload-result');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showAlert('Upload error occurred', 'error', 'upload-result');
+            }
+        }
+
+        // Load current data info
+        async function loadCurrentData() {
+            try {
+                const response = await fetch('/api/data', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    currentData = await response.json();
+                    displayDataInfo();
+                    generateDefaultCharts();
+                } else {
+                    document.getElementById('data-info').innerHTML = '<div class="alert alert-info">No data available. Please upload a sales report.</div>';
+                    document.getElementById('charts-container').innerHTML = '<div class="no-data"><h3>No Data Available</h3><p>Please contact the administrator to upload sales data.</p></div>';
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        // Display data information
+        function displayDataInfo() {
+            if (!currentData) return;
+
+            const infoHtml = `
+                <div class="alert alert-success">
+                    <strong>📊 Current Dataset:</strong> ${currentData.filename}<br>
+                    <strong>📅 Uploaded:</strong> ${new Date(currentData.upload_date).toLocaleString()}<br>
+                    <strong>📋 Sheets:</strong> ${Object.keys(currentData.structure).join(', ')}
+                </div>
+            `;
+            
+            document.getElementById('data-info').innerHTML = infoHtml;
+        }
+
+        // Generate default charts
+        async function generateDefaultCharts() {
+            if (!currentData) {
+                await loadCurrentData();
+                if (!currentData) return;
+            }
+
+            try {
+                showLoading('charts-container');
+                
+                const response = await fetch('/api/charts/generate', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayCharts(data.charts);
+                } else {
+                    document.getElementById('charts-container').innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+                }
+            } catch (error) {
+                console.error('Error generating charts:', error);
+                document.getElementById('charts-container').innerHTML = '<div class="alert alert-error">Error generating charts</div>';
+            }
+        }
+
+        // Display charts
+        function displayCharts(charts) {
+            if (!charts || charts.length === 0) {
+                document.getElementById('charts-container').innerHTML = '<div class="no-data"><h3>No Charts Available</h3><p>Unable to generate charts from the current data.</p></div>';
+                return;
+            }
+
+            const chartsHtml = charts.map(chart => {
+                if (chart.type === 'svg') {
+                    const svgContent = atob(chart.image);
+                    return `
+                        <div class="chart-container">
+                            <div class="chart-title">${chart.title}</div>
+                            <div class="chart-svg">${svgContent}</div>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="chart-container">
+                            <div class="chart-title">${chart.title}</div>
+                            <img src="data:image/png;base64,${chart.image}" alt="${chart.title}" class="chart-image">
+                        </div>
+                    `;
+                }
+            }).join('');
+
+            document.getElementById('charts-container').innerHTML = `<div class="charts-grid">${chartsHtml}</div>`;
+        }
+
+        // Refresh charts
+        function refreshCharts() {
+            loadCurrentData();
+        }
+
+        // Show loading indicator
+        function showLoading(elementId) {
+            document.getElementById(elementId).innerHTML = '<div class="text-center"><div class="loading"></div><p>Generating charts...</p></div>';
+        }
+
+        // Show alert messages
+        function showAlert(message, type, targetId = null) {
+            const alertClass = type === 'success' ? 'alert-success' : 
+                             type === 'error' ? 'alert-error' : 'alert-info';
+            
+            const alertHtml = `<div class="alert ${alertClass}">${message}</div>`;
+            
+            if (targetId) {
+                document.getElementById(targetId).innerHTML = alertHtml;
+            } else {
+                // Show at top of page
+                const container = document.querySelector('.container');
+                const alertDiv = document.createElement('div');
+                alertDiv.innerHTML = alertHtml;
+                container.insertBefore(alertDiv, container.firstChild);
+                
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 5000);
+            }
+        }
+
+        // Handle Enter key for login
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && (document.activeElement.id === 'username' || document.activeElement.id === 'password')) {
+                adminLogin();
+            }
+        });
+    </script>
+</body>
+</html>

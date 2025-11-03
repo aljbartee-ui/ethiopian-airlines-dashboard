@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Analysis - Ethiopian Airlines</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --et-green: #5C8C4C;
+            --et-yellow: #FCCC2C;
+            --et-red: #C4242B;
+            --et-dark-green: #3a5a2f;
+            --et-light-green: #7ba66b;
+            --et-dark-yellow: #d9b324;
+            --et-dark-red: #9a1c22;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a2f1a 0%, #2d4a2d 50%, #1f3520 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, transparent 0%, rgba(92, 140, 76, 0.05) 33%, transparent 33%),
+                linear-gradient(90deg, transparent 33%, rgba(252, 204, 44, 0.05) 66%, transparent 66%),
+                linear-gradient(90deg, transparent 66%, rgba(196, 36, 43, 0.05) 100%);
+            animation: slideStripes 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes slideStripes {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(100px); }
+        }
+
+        .container {
+            max-width: 1900px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .logo-stripes {
+            display: flex;
+            gap: 8px;
+        }
+
+        .logo-stripe {
+            width: 6px;
+            height: 60px;
+            border-radius: 3px;
+            animation: stripeGlow 2s ease-in-out infinite;
+        }
+
+        .stripe-green { background: linear-gradient(180deg, var(--et-green), var(--et-dark-green)); animation-delay: 0s; }
+        .stripe-yellow { background: linear-gradient(180deg, var(--et-yellow), var(--et-dark-yellow)); animation-delay: 0.3s; }
+        .stripe-red { background: linear-gradient(180deg, var(--et-red), var(--et-dark-red)); animation-delay: 0.6s; }
+
+        @keyframes stripeGlow {
+            0%, 100% { opacity: 1; transform: scaleY(1); }
+            50% { opacity: 0.7; transform: scaleY(0.95); }
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 3em;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.3em;
+            font-weight: 400;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .nav-btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-btn.back {
+            background: linear-gradient(135deg, var(--et-yellow), var(--et-dark-yellow));
+            color: #1a2f1a;
+        }
+
+        .nav-btn.home {
+            background: linear-gradient(135deg, var(--et-green), var(--et-dark-green));
+            color: white;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .upload-section {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 35px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            margin-bottom: 40px;
+            animation: fadeInUp 0.8s ease 0.2s both;
+            border: 2px solid rgba(92, 140, 76, 0.2);
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .upload-section h2 {
+            color: var(--et-dark-green);
+            margin-bottom: 25px;
+            font-size: 1.9em;
+            font-weight: 700;
+        }
+
+        .upload-form {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border: 3px dashed var(--et-green);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: var(--et-dark-green);
+        }
+
+        .file-input-label:hover {
+            background: linear-gradient(135deg, #e9ecef, #dee2e6);
+            border-color: var(--et-yellow);
+            transform: translateY(-2px);
+        }
+
+        .upload-btn {
+            padding: 16px 40px;
+            background: linear-gradient(135deg, var(--et-green), var(--et-dark-green));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(92, 140, 76, 0.3);
+        }
+
+        .upload-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, var(--et-dark-green), #2a4422);
+            transform: translateY(-3px);
+        }
+
+        .upload-btn:disabled {
+            background: linear-gradient(135deg, #ccc, #999);
+            cursor: not-allowed;
+        }
+
+        .file-name {
+            color: #666;
+            font-style: italic;
+        }
+
+        .filters-section {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            margin-bottom: 40px;
+            animation: fadeInUp 0.8s ease 0.3s both;
+        }
+
+        .filters-section h3 {
+            color: var(--et-dark-green);
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .filter-group label {
+            display: block;
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .filter-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            font-family: inherit;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-group select:hover {
+            border-color: var(--et-green);
+        }
+
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--et-yellow);
+            box-shadow: 0 0 0 3px rgba(252, 204, 44, 0.2);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+            animation: fadeInUp 0.8s ease 0.4s both;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.95));
+            padding: 30px;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--et-green), var(--et-yellow), var(--et-red));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.25);
+            border-color: rgba(92, 140, 76, 0.3);
+        }
+
+        .metric-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 0.95em;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        .metric-value {
+            color: var(--et-dark-green);
+            font-size: 2.8em;
+            font-weight: 800;
+            margin-bottom: 8px;
+            line-height: 1.1;
+        }
+
+        .metric-subtitle {
+            color: #666;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(550px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 35px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            transition: all 0.4s ease;
+            animation: fadeInUp 0.8s ease both;
+        }
+
+        .chart-container:nth-child(1) { animation-delay: 0.5s; }
+        .chart-container:nth-child(2) { animation-delay: 0.6s; }
+        .chart-container:nth-child(3) { animation-delay: 0.7s; }
+        .chart-container:nth-child(4) { animation-delay: 0.8s; }
+        .chart-container:nth-child(5) { animation-delay: 0.9s; }
+        .chart-container:nth-child(6) { animation-delay: 1.0s; }
+
+        .chart-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        .chart-container h3 {
+            color: var(--et-dark-green);
+            margin-bottom: 25px;
+            font-size: 1.6em;
+            font-weight: 700;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 420px;
+        }
+
+        .chart-container.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+            font-size: 1.3em;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 25px 0;
+            font-weight: 500;
+            border-left: 5px solid var(--et-red);
+        }
+
+        .success {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            color: #155724;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 25px 0;
+            font-weight: 500;
+            border-left: 5px solid var(--et-green);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 80px 40px;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .no-data h2 {
+            color: var(--et-dark-green);
+            margin-bottom: 20px;
+            font-size: 2.2em;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            .filter-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-logo">
+                <div class="logo-stripes">
+                    <div class="logo-stripe stripe-green"></div>
+                    <div class="logo-stripe stripe-yellow"></div>
+                    <div class="logo-stripe stripe-red"></div>
+                </div>
+                <div>
+                    <h1>🌍 Route Analysis Dashboard</h1>
+                    <p>Outbound Destinations & Inbound Origins Analytics</p>
+                </div>
+                <div class="logo-stripes">
+                    <div class="logo-stripe stripe-green"></div>
+                    <div class="logo-stripe stripe-yellow"></div>
+                    <div class="logo-stripe stripe-red"></div>
+                </div>
+            </div>
+            <div class="nav-buttons">
+                <a href="/flight-load" class="nav-btn back">← Back to Flight Load</a>
+                <a href="/" class="nav-btn home">🏠 Home</a>
+            </div>
+        </div>
+
+        <div class="upload-section">
+            <h2>📤 Upload Route Analysis Data</h2>
+            <form id="uploadForm" class="upload-form">
+                <div class="file-input-wrapper">
+                    <input type="file" id="fileInput" name="file" accept=".xlsx,.xls">
+                    <label for="fileInput" class="file-input-label">
+                        📁 Choose Excel File
+                    </label>
+                </div>
+                <span class="file-name" id="fileName">No file chosen</span>
+                <button type="submit" class="upload-btn" id="uploadBtn" disabled>Upload & Analyze</button>
+            </form>
+            <div id="uploadMessage"></div>
+        </div>
+
+        <div id="filtersSection" style="display: none;">
+            <div class="filters-section">
+                <h3>📊 Week Selection & Comparison</h3>
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="weekSelect">Select Week</label>
+                        <select id="weekSelect">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="compareWeekSelect">Compare With</label>
+                        <select id="compareWeekSelect">
+                            <option value="">Select week to compare</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="dashboardContent"></div>
+    </div>
+
+    <script>
+        let availableWeeks = [];
+        let currentWeekIndex = null;
+        let compareWeekIndex = null;
+
+        // File input handling
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadMessage = document.getElementById('uploadMessage');
+        const filtersSection = document.getElementById('filtersSection');
+        const dashboardContent = document.getElementById('dashboardContent');
+        const weekSelect = document.getElementById('weekSelect');
+        const compareWeekSelect = document.getElementById('compareWeekSelect');
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                fileName.textContent = this.files[0].name;
+                uploadBtn.disabled = false;
+            } else {
+                fileName.textContent = 'No file chosen';
+                uploadBtn.disabled = true;
+            }
+        });
+
+        // Upload form submission
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Processing...';
+            uploadMessage.innerHTML = '<div class="loading">⏳ Processing all sheets... This may take a moment...</div>';
+            
+            try {
+                const response = await fetch('/flight-load/route-analysis/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    uploadMessage.innerHTML = `<div class="success">✅ ${result.message}</div>`;
+                    await loadAvailableWeeks();
+                    filtersSection.style.display = 'block';
+                    loadDashboardData();
+                } else {
+                    uploadMessage.innerHTML = `<div class="error">❌ ${result.error}</div>`;
+                }
+            } catch (error) {
+                uploadMessage.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload & Analyze';
+            }
+        });
+
+        // Load available weeks
+        async function loadAvailableWeeks() {
+            try {
+                const response = await fetch('/flight-load/route-analysis/weeks');
+                const result = await response.json();
+                
+                if (result.success) {
+                    availableWeeks = result.weeks;
+                    
+                    // Populate week selectors
+                    weekSelect.innerHTML = availableWeeks.map((week, idx) => 
+                        `<option value="${idx}">${week.name} (${week.total_passengers} pax)</option>`
+                    ).join('');
+                    
+                    compareWeekSelect.innerHTML = '<option value="">Select week to compare</option>' + 
+                        availableWeeks.map((week, idx) => 
+                            `<option value="${idx}">${week.name} (${week.total_passengers} pax)</option>`
+                        ).join('');
+                    
+                    // Set default to most recent week
+                    currentWeekIndex = availableWeeks.length - 1;
+                    weekSelect.value = currentWeekIndex;
+                    
+                    // Set compare to previous week if available
+                    if (availableWeeks.length > 1) {
+                        compareWeekIndex = availableWeeks.length - 2;
+                        compareWeekSelect.value = compareWeekIndex;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading weeks:', error);
+            }
+        }
+
+        // Week selection change
+        weekSelect.addEventListener('change', function() {
+            currentWeekIndex = parseInt(this.value);
+            loadDashboardData();
+        });
+
+        compareWeekSelect.addEventListener('change', function() {
+            compareWeekIndex = this.value ? parseInt(this.value) : null;
+            loadDashboardData();
+        });
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            if (currentWeekIndex === null) return;
+            
+            try {
+                const response = await fetch(`/flight-load/route-analysis/data?week_index=${currentWeekIndex}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayDashboard(result.summary);
+                    loadCharts();
+                }
+            } catch (error) {
+                dashboardContent.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Display dashboard metrics
+        function displayDashboard(summary) {
+            dashboardContent.innerHTML = `
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Selected Week</div>
+                        <div class="metric-value" style="font-size: 1.6em;">${summary.week}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Total Passengers</div>
+                        <div class="metric-value">${summary.total_passengers.toLocaleString()}</div>
+                        <div class="metric-subtitle">All Routes</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Outbound</div>
+                        <div class="metric-value">${summary.outbound.total_passengers.toLocaleString()}</div>
+                        <div class="metric-subtitle">${summary.outbound.total_routes} Destinations</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Inbound</div>
+                        <div class="metric-value">${summary.inbound.total_passengers.toLocaleString()}</div>
+                        <div class="metric-subtitle">${summary.inbound.total_routes} Origins</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Top Destination</div>
+                        <div class="metric-value" style="font-size: 1.4em;">${summary.outbound.top_destination ? summary.outbound.top_destination.display_name : 'N/A'}</div>
+                        <div class="metric-subtitle">${summary.outbound.top_destination ? summary.outbound.top_destination.passengers.toLocaleString() + ' pax' : ''}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Top Origin</div>
+                        <div class="metric-value" style="font-size: 1.4em;">${summary.inbound.top_origin ? summary.inbound.top_origin.display_name : 'N/A'}</div>
+                        <div class="metric-subtitle">${summary.inbound.top_origin ? summary.inbound.top_origin.passengers.toLocaleString() + ' pax' : ''}</div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>✈️ Top 10 Destinations (Outbound)</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="topDestinationsChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>🛬 Top 10 Origins (Inbound)</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="topOriginsChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>🔄 Outbound vs Inbound Traffic</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="outboundInboundChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>📈 Daily Trend (Both Directions)</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="dailyTrendChart"></canvas>
+                        </div>
+                    </div>
+                    ${compareWeekIndex !== null ? `
+                    <div class="chart-container full-width">
+                        <h3>📊 Week Comparison - Outbound</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="weekComparisonOutboundChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container full-width">
+                        <h3>📊 Week Comparison - Inbound</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="weekComparisonInboundChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container full-width">
+                        <h3>📈 Growth Rates - Outbound</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="growthRatesOutboundChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container full-width">
+                        <h3>📈 Growth Rates - Inbound</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="growthRatesInboundChart"></canvas>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Load all charts
+        async function loadCharts() {
+            await Promise.all([
+                loadTopDestinations(),
+                loadTopOrigins(),
+                loadOutboundInbound(),
+                loadDailyTrend()
+            ]);
+            
+            if (compareWeekIndex !== null) {
+                await Promise.all([
+                    loadWeekComparison('outbound'),
+                    loadWeekComparison('inbound'),
+                    loadGrowthRates('outbound'),
+                    loadGrowthRates('inbound')
+                ]);
+            }
+        }
+
+        // Chart.js defaults
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.font.size = 13;
+        Chart.defaults.color = '#666';
+
+        // Helper function to create gradients
+        function createGradient(ctx, color, vertical = false) {
+            const canvas = ctx.canvas;
+            const gradient = vertical 
+                ? ctx.getContext('2d').createLinearGradient(0, 0, 0, canvas.height)
+                : ctx.getContext('2d').createLinearGradient(0, 0, 0, canvas.height);
+            
+            if (color === 'green') {
+                gradient.addColorStop(0, 'rgba(92, 140, 76, 0.8)');
+                gradient.addColorStop(1, 'rgba(92, 140, 76, 0.3)');
+            } else if (color === 'yellow') {
+                gradient.addColorStop(0, 'rgba(252, 204, 44, 0.8)');
+                gradient.addColorStop(1, 'rgba(252, 204, 44, 0.3)');
+            } else if (color === 'red') {
+                gradient.addColorStop(0, 'rgba(196, 36, 43, 0.8)');
+                gradient.addColorStop(1, 'rgba(196, 36, 43, 0.3)');
+            }
+            
+            return gradient;
+        }
+
+        // Load top destinations
+        async function loadTopDestinations() {
+            try {
+                const response = await fetch(`/flight-load/route-analysis/charts/top-destinations?week_index=${currentWeekIndex}&limit=10`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const ctx = document.getElementById('topDestinationsChart');
+                    if (ctx) {
+                        requestAnimationFrame(() => {
+                            new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: data.labels,
+                                    datasets: [{
+                                        label: 'Passengers',
+                                        data: data.datasets[0].data,
+                                        backgroundColor: createGradient(ctx, 'green'),
+                                        borderColor: 'rgba(92, 140, 76, 1)',
+                                        borderWidth: 2,
+                                        borderRadius: 8
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    animation: { duration: 1500, easing: 'easeInOutQuart' },
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                            padding: 12,
+                                            callbacks: {
+                                                label: (context) => 'Passengers: ' + context.parsed.y.toLocaleString()
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                                            ticks: { callback: (value) => value.toLocaleString() }
+                                        },
+                                        x: {
+                                            grid: { display: false },
+                                            ticks: { maxRotation: 45, minRotation: 45, font: { weight: '600' } }
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading top destinations:', error);
+            }
+        }
+
+        // Load top origins
+        async function loadTopOrigins() {
+            try {
+                const response = await fetch(`/flight-load/route-analysis/charts/top-origins?week_index=${currentWeekIndex}&limit=10`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const ctx = document.getElementById('topOriginsChart');
+                    if (ctx) {
+                        requestAnimationFrame(() => {
+                            new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: data.labels,
+                                    datasets: [{
+                                        label: 'Passengers',
+                                        data: data.datasets[0].data,
+                                        backgroundColor: createGradient(ctx, 'yellow'),
+                                        borderColor: 'rgba(252, 204, 44, 1)',
+                                        borderWidth: 2,
+                                        borderRadius: 8
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    animation: { duration: 1500, easing: 'easeInOutQuart' },
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                            padding: 12,
+                                            callbacks: {
+                                                label: (context) => 'Passengers: ' + context.parsed.y.toLocaleString()
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                                            ticks: { callback: (value) => value.toLocaleString() }
+                                        },
+                                        x: {
+                                            grid: { display: false },
+                                            ticks: { maxRotation: 45, minRotation: 45, font: { weight: '600' } }
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading top origins:', error);
+            }
+        }
+
+        // Load outbound vs inbound
+        async function loadOutboundInbound() {
+            try {
+                const response = await fetch(`/flight-load/route-analysis/charts/outbound-vs-inbound?week_index=${currentWeekIndex}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const ctx = document.getElementById('outboundInboundChart');
+                    if (ctx) {
+                        requestAnimationFrame(() => {
+                            new Chart(ctx, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: data.labels,
+                                    datasets: [{
+                                        data: data.datasets[0].data,
+                                        backgroundColor: [
+                                            'rgba(92, 140, 76, 0.9)',
+                                            'rgba(252, 204, 44, 0.9)'
+                                        ],
+                                        borderColor: '#fff',
+                                        borderWidth: 3
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    animation: { duration: 1500, easing: 'easeInOutQuart' },
+                                    plugins: {
+                                        legend: { position: 'bottom', labels: { font: { size: 14, weight: 'bold' }, padding: 15 } },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                            padding: 12,
+                                            callbacks: {
+                                                label: (context) => {
+                                                    const label = context.label || '';
+                                                    const value = context.parsed || 0;
+                                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                    const percentage = ((value / total) * 100).toFixed(1);
+                                                    return label + ': ' + value.toLocaleString() + ' (' + percentage + '%)';
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading outbound vs inbound:', error);
+            }
+        }
+
+        // Load daily trend
+        async function loadDailyTrend() {
+            try {
+                const response = await fetch(`/flight-load/route-analysis/charts/daily-trend?week_index=${currentWeekIndex}&direction=both`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const ctx = document.getElementById('dailyTrendChart');
+                    if (ctx) {
+                        requestAnimationFrame(() => {
+                            new Chart(ctx, {
+                                type: 'line',
+                                data: {
+                                    labels: data.labels,
+                                    datasets: data.datasets.map((ds, idx) => ({
+                                        label: ds.label,
+                                        data: ds.data,
+                                        borderColor: idx === 0 ? 'rgba(92, 140, 76, 1)' : 'rgba(252, 204, 44, 1)',
+                                        backgroundColor: idx === 0 ? createGradient(ctx, 'green', true) : createGradient(ctx, 'yellow', true),
+                                        borderWidth: 4,
+                                        fill: true,
+                                        tension: 0.4,
+                                        pointRadius: 6,
+                                        pointHoverRadius: 8
+                                    }))
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    animation: { duration: 1500, easing: 'easeInOutQuart' },
+                                    plugins: {
+                                        legend: { display: true, labels: { font: { size: 14, weight: 'bold' } } },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                            padding: 12,
+                                            callbacks: {
+                                                label: (context) => context.dataset.label + ': ' + context.parsed.y.toLocaleString()
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                                            ticks: { callback: (value) => value.toLocaleString() }
+                                        },
+                                        x: { grid: { color: 'rgba(0, 0, 0, 0.05)' } }
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading daily trend:', error);
+            }
+        }
+
+        // Load week comparison
+        async function loadWeekComparison(direction) {
+            try {
+                const response = await fetch(`/flight-load/route-analysis/charts/week-comparison?week1_index=${currentWeekIndex}&week2_index=${compareWeekIndex}&direction=${direction}&limit=10`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const chartId = direction === 'outbound' ? 'weekComparisonOutboundChart' : 'weekComparisonInboundChart';
+                    const ctx = document.getElementById(chartId);
+                    if (ctx) {
+                        requestAnimationFrame(() => {
+                            new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: data.labels,
+                                    datasets: data.datasets.map((ds, idx) => ({
+                                        label: ds.label,
+                                        data: ds.data,
+                                        backgroundColor: idx === 0 ? createGradient(ctx, 'green') : createGradient(ctx, 'yellow'),
+                                        borderColor: idx === 0 ? 'rgba(92, 140, 76, 1)' : 'rgba(252, 204, 44, 1)',
+                                        borderWidth: 2,
+                                        borderRadius: 8
+                                    }))
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    animation: { duration: 1500, easing: 'easeInOutQuart' },
+                                    plugins: {
+                                        legend: { display: true, labels: { font: { size: 14, weight: 'bold' } } },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                            padding: 12,
+                                            callbacks: {
+                                                label: (context) => context.dataset.label + ': ' + context.parsed.y.toLocaleString()
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                                            ticks: { callback: (value) => value.toLocaleString() }
+                                        },
+                                        x: {
+                                            grid: { display: false },
+                                            ticks: { maxRotation: 45, minRotation: 45, font: { weight: '600' } }
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error(`Error loading week comparison (${direction}):`, error);
+            }
+        }
+
+        // Load growth rates
+        async function loadGrowthRates(direction) {
+            try {
+                const response = await fetch(`/flight-load/route-analysis/charts/growth-rates?week1_index=${currentWeekIndex}&week2_index=${compareWeekIndex}&direction=${direction}&limit=10`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const chartId = direction === 'outbound' ? 'growthRatesOutboundChart' : 'growthRatesInboundChart';
+                    const ctx = document.getElementById(chartId);
+                    if (ctx) {
+                        requestAnimationFrame(() => {
+                            const colors = data.datasets[0].data.map(v => 
+                                v >= 0 ? 'rgba(92, 140, 76, 0.8)' : 'rgba(196, 36, 43, 0.8)'
+                            );
+                            
+                            new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: data.labels,
+                                    datasets: [{
+                                        label: 'Growth Rate (%)',
+                                        data: data.datasets[0].data,
+                                        backgroundColor: colors,
+                                        borderColor: colors.map(c => c.replace('0.8', '1')),
+                                        borderWidth: 2,
+                                        borderRadius: 8
+                                    }]
+                                },
+                                options: {
+                                    indexAxis: 'y',
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    animation: { duration: 1500, easing: 'easeInOutQuart' },
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                            padding: 12,
+                                            callbacks: {
+                                                label: (context) => 'Growth: ' + context.parsed.x.toFixed(2) + '%'
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        x: {
+                                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                                            ticks: { callback: (value) => value + '%' }
+                                        },
+                                        y: {
+                                            grid: { display: false },
+                                            ticks: { font: { weight: '600' } }
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error(`Error loading growth rates (${direction}):`, error);
+            }
+        }
+
+        // Load data on page load
+        loadAvailableWeeks().then(() => {
+            if (availableWeeks.length > 0) {
+                filtersSection.style.display = 'block';
+                loadDashboardData();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 3px solid #4080FF;
+            padding-bottom: 10px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-public { background-color: #ff6b6b; }
+        .status-admin { background-color: #51cf66; }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4080FF;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4080FF, #57A9FB);
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .upload-area {
+            border: 3px dashed #4080FF;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .date-range-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .date-input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .date-input-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .date-input-group input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .clear-dates-btn {
+            padding: 10px 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            align-self: flex-end;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(700px, 1fr));
+            gap: 30px;
+            margin-top: 25px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .toggle-button {
+            padding: 8px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .toggle-button.active {
+            background: #4080FF;
+            border-color: #4080FF;
+            color: white;
+        }
+
+        .toggle-button:hover {
+            border-color: #4080FF;
+        }
+
+        .chart-image {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Sales Dashboard</h1>
+            <p>Dynamic Excel Report Visualization</p>
+        </div>
+
+        <!-- System Status -->
+        <div class="card">
+            <h2>System Status</h2>
+            <div id="system-status">
+                <span class="status-indicator status-public"></span>
+                <span id="status-text">Public Mode</span>
+            </div>
+        </div>
+
+        <!-- Admin Login -->
+        <div class="card" id="admin-login-card">
+            <h2>Admin Login</h2>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" class="form-control" placeholder="Enter admin username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="form-control" placeholder="Enter admin password">
+            </div>
+            <button onclick="adminLogin()" class="btn btn-primary">🔐 Login as Admin</button>
+            <button onclick="adminLogout()" class="btn btn-danger" id="logout-btn" style="display: none; margin-left: 10px;">🚪 Logout</button>
+            <div id="login-result"></div>
+        </div>
+
+        <!-- Admin Panel -->
+        <div class="card" id="admin-panel" style="display: none;">
+            <h2>Admin Panel</h2>
+            
+            <div class="upload-area" onclick="document.getElementById('file-input').click()">
+                <h3>📁 Upload Excel File</h3>
+                <p>Click here or drag and drop your sales report (.xlsx, .xls)</p>
+            </div>
+            <input type="file" id="file-input" accept=".xlsx,.xls" style="display: none;" onchange="handleFileSelect(event)">
+            
+            <div id="upload-result"></div>
+        </div>
+
+        <!-- Date Range Filter -->
+        <div class="card" id="date-filter-card" style="display: none;">
+            <h2>📅 Date Range Filter</h2>
+            <div class="date-range-selector">
+                <div class="date-input-group">
+                    <label for="start-date">Start Date</label>
+                    <input type="date" id="start-date" onchange="updateDateRange()">
+                </div>
+                <div class="date-input-group">
+                    <label for="end-date">End Date</label>
+                    <input type="date" id="end-date" onchange="updateDateRange()">
+                </div>
+                <button onclick="clearDateRange()" class="clear-dates-btn">Clear Dates</button>
+            </div>
+            <div id="date-range-info" style="font-size: 0.9rem; color: #666; margin-top: 10px;"></div>
+        </div>
+
+        <!-- Data Info -->
+        <div class="card">
+            <h2>Sales Analytics</h2>
+            <div id="data-info">
+                <div class="alert alert-info">No data available. Please upload a sales report.</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid" id="charts-container">
+            <!-- Charts will be loaded here -->
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+        let startDate = null;
+        let endDate = null;
+        
+        // Chart configurations
+        let chartConfigs = {
+            'by_report': { dataMode: 'revenue', timeMode: 'daily' },
+            'by_agent': { dataMode: 'revenue' },
+            'by_days': { dataMode: 'revenue' },
+            'by_hours': { dataMode: 'revenue' }
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminStatus();
+            loadCurrentData();
+        });
+
+        // Admin authentication
+        async function adminLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showAlert('Please enter both username and password', 'error', 'login-result');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('Login successful!', 'success', 'login-result');
+                    updateAdminStatus(true);
+                } else {
+                    showAlert(data.error || 'Login failed', 'error', 'login-result');
+                }
+            } catch (error) {
+                showAlert('Login error occurred', 'error', 'login-result');
+            }
+        }
+
+        async function adminLogout() {
+            try {
+                const response = await fetch('/api/admin/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    showAlert('Logged out successfully', 'info', 'login-result');
+                    updateAdminStatus(false);
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        async function checkAdminStatus() {
+            try {
+                const response = await fetch('/api/admin/status', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                updateAdminStatus(data.logged_in);
+            } catch (error) {
+                console.error('Error checking admin status:', error);
+            }
+        }
+
+        function updateAdminStatus(isLoggedIn) {
+            const statusIndicator = document.querySelector('.status-indicator');
+            const statusText = document.getElementById('status-text');
+            const adminPanel = document.getElementById('admin-panel');
+            const dateFilterCard = document.getElementById('date-filter-card');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            if (isLoggedIn) {
+                statusIndicator.className = 'status-indicator status-admin';
+                statusText.textContent = 'Admin Online';
+                adminPanel.style.display = 'block';
+                dateFilterCard.style.display = 'block';
+                logoutBtn.style.display = 'inline-block';
+            } else {
+                statusIndicator.className = 'status-indicator status-public';
+                statusText.textContent = 'Public Mode';
+                adminPanel.style.display = 'none';
+                dateFilterCard.style.display = 'none';
+                logoutBtn.style.display = 'none';
+            }
+        }
+
+        // File handling
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFileUpload(file);
+            }
+        }
+
+        async function handleFileUpload(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                showAlert('Please select a valid Excel file', 'error', 'upload-result');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                showAlert('Uploading...', 'info', 'upload-result');
+                
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(`File uploaded successfully! ${data.total_rows} rows processed.`, 'success', 'upload-result');
+                    loadCurrentData();
+                } else {
+                    showAlert(data.error || 'Upload failed', 'error', 'upload-result');
+                }
+            } catch (error) {
+                showAlert('Upload error occurred', 'error', 'upload-result');
+            }
+        }
+
+        // Data loading
+        async function loadCurrentData() {
+            try {
+                const response = await fetch('/api/data', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    currentData = await response.json();
+                    displayDataInfo();
+                    generateAllCharts();
+                } else {
+                    document.getElementById('data-info').innerHTML = '<div class="alert alert-info">No data available. Please upload a sales report.</div>';
+                    document.getElementById('charts-container').innerHTML = '';
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function displayDataInfo() {
+            if (!currentData) return;
+
+            const infoHtml = `
+                <div class="alert alert-success">
+                    <strong>📊 Current Dataset:</strong> ${currentData.filename}<br>
+                    <strong>📅 Uploaded:</strong> ${new Date(currentData.upload_date).toLocaleString()}<br>
+                    <strong>📈 Total Rows:</strong> ${currentData.total_rows.toLocaleString()}
+                </div>
+            `;
+            
+            document.getElementById('data-info').innerHTML = infoHtml;
+        }
+
+        // Date range
+        function updateDateRange() {
+            startDate = document.getElementById('start-date').value;
+            endDate = document.getElementById('end-date').value;
+            
+            const infoDiv = document.getElementById('date-range-info');
+            if (startDate || endDate) {
+                let text = '📅 Filtering: ';
+                if (startDate && endDate) {
+                    text += `${startDate} to ${endDate}`;
+                } else if (startDate) {
+                    text += `From ${startDate}`;
+                } else {
+                    text += `Up to ${endDate}`;
+                }
+                infoDiv.innerHTML = `<strong>${text}</strong>`;
+                infoDiv.style.color = '#4080FF';
+            } else {
+                infoDiv.innerHTML = '';
+            }
+            
+            if (currentData) {
+                generateAllCharts();
+            }
+        }
+
+        function clearDateRange() {
+            document.getElementById('start-date').value = '';
+            document.getElementById('end-date').value = '';
+            startDate = null;
+            endDate = null;
+            document.getElementById('date-range-info').innerHTML = '';
+            
+            if (currentData) {
+                generateAllCharts();
+            }
+        }
+
+        // Chart generation
+        async function generateAllCharts() {
+            if (!currentData) return;
+
+            const container = document.getElementById('charts-container');
+            container.innerHTML = '<div class="loading">📊 Generating charts...</div>';
+
+            const charts = [
+                { id: 'by_report', name: 'By Report (Time-based)', hasTimeToggle: true },
+                { id: 'by_agent', name: 'By Agent', hasTimeToggle: false },
+                { id: 'by_days', name: 'By Days of Week', hasTimeToggle: false },
+                { id: 'by_hours', name: 'By Hours (24h)', hasTimeToggle: false }
+            ];
+
+            let chartsHtml = '';
+            
+            for (const chart of charts) {
+                const chartData = await generateChart(chart.id);
+                if (chartData) {
+                    chartsHtml += createChartCard(chart, chartData);
+                }
+            }
+
+            container.innerHTML = chartsHtml;
+        }
+
+        async function generateChart(chartId) {
+            try {
+                const config = chartConfigs[chartId];
+                let url = `/api/charts/generate/${chartId}?data_mode=${config.dataMode}`;
+                
+                if (chartId === 'by_report' && config.timeMode) {
+                    url += `&time_mode=${config.timeMode}`;
+                }
+                
+                if (startDate) url += `&start_date=${startDate}`;
+                if (endDate) url += `&end_date=${endDate}`;
+                
+                const response = await fetch(url, { credentials: 'include' });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    return data.chart;
+                }
+            } catch (error) {
+                console.error(`Error generating chart ${chartId}:`, error);
+            }
+            return null;
+        }
+
+        function createChartCard(chartInfo, chartData) {
+            const config = chartConfigs[chartInfo.id];
+            
+            let controlsHtml = `
+                <div class="chart-controls">
+                    <button class="toggle-button ${config.dataMode === 'revenue' ? 'active' : ''}" 
+                            onclick="toggleDataMode('${chartInfo.id}', 'revenue')">
+                        💰 Revenue
+                    </button>
+                    <button class="toggle-button ${config.dataMode === 'tickets' ? 'active' : ''}" 
+                            onclick="toggleDataMode('${chartInfo.id}', 'tickets')">
+                        🎫 Tickets
+                    </button>
+            `;
+            
+            if (chartInfo.hasTimeToggle) {
+                controlsHtml += `
+                    <button class="toggle-button ${config.timeMode === 'daily' ? 'active' : ''}" 
+                            onclick="toggleTimeMode('${chartInfo.id}', 'daily')">
+                        📅 Daily
+                    </button>
+                    <button class="toggle-button ${config.timeMode === 'monthly' ? 'active' : ''}" 
+                            onclick="toggleTimeMode('${chartInfo.id}', 'monthly')">
+                        📆 Monthly
+                    </button>
+                `;
+            }
+            
+            controlsHtml += '</div>';
+            
+            return `
+                <div class="chart-card" id="chart-${chartInfo.id}">
+                    <div class="chart-header">
+                        <div class="chart-title">${chartData.title}</div>
+                        ${controlsHtml}
+                    </div>
+                    <img src="data:image/svg+xml;base64,${chartData.image}" alt="${chartData.title}" class="chart-image">
+                </div>
+            `;
+        }
+
+        async function toggleDataMode(chartId, mode) {
+            chartConfigs[chartId].dataMode = mode;
+            await refreshChart(chartId);
+        }
+
+        async function toggleTimeMode(chartId, mode) {
+            chartConfigs[chartId].timeMode = mode;
+            await refreshChart(chartId);
+        }
+
+        async function refreshChart(chartId) {
+            const chartCard = document.getElementById(`chart-${chartId}`);
+            if (!chartCard) return;
+            
+            chartCard.innerHTML = '<div class="loading">Updating chart...</div>';
+            
+            const chartData = await generateChart(chartId);
+            if (chartData) {
+                const chartInfo = {
+                    id: chartId,
+                    name: chartData.title,
+                    hasTimeToggle: chartId === 'by_report'
+                };
+                chartCard.outerHTML = createChartCard(chartInfo, chartData);
+            }
+        }
+
+        // Utility functions
+        function showAlert(message, type, containerId) {
+            const container = document.getElementById(containerId);
+            const alertHtml = `<div class="alert alert-${type}">${message}</div>`;
+            container.innerHTML = alertHtml;
+            
+            setTimeout(() => {
+                if (container.innerHTML === alertHtml) {
+                    container.innerHTML = '';
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
