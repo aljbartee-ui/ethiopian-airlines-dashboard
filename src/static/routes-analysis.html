@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Routes Analysis - Ethiopian Airlines KWI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            /* Ethiopian Airlines Official Colors */
+            --et-green: #4D8C3C;
+            --et-green-dark: #3A6B2D;
+            --et-green-light: #5FA04A;
+            --et-yellow: #FFCC00;
+            --et-yellow-dark: #E6B800;
+            --et-yellow-light: #FFD633;
+            --et-red: #CC0000;
+            --et-red-dark: #990000;
+            --et-red-light: #E60000;
+            --white: #FFFFFF;
+            --gray-900: #212529;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a3318 0%, #2d4a2a 50%, #1f3520 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px 25px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-stripes {
+            display: flex;
+            gap: 4px;
+        }
+
+        .header-stripe {
+            width: 4px;
+            height: 40px;
+            border-radius: 2px;
+        }
+
+        .header-stripe.green { background: var(--et-green); }
+        .header-stripe.yellow { background: var(--et-yellow); }
+        .header-stripe.red { background: var(--et-red); }
+
+        .header-title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--white);
+        }
+
+        .header-title p {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(77, 140, 60, 0.2);
+            border: 1px solid var(--et-green);
+            border-radius: 30px;
+            color: var(--et-green-light);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .user-badge.admin {
+            background: rgba(255, 204, 0, 0.2);
+            border-color: var(--et-yellow);
+            color: var(--et-yellow);
+        }
+
+        .btn-back {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--white);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: rgba(204, 0, 0, 0.2);
+            border: 1px solid var(--et-red);
+            border-radius: 8px;
+            color: var(--et-red-light);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            background: var(--et-red);
+            color: var(--white);
+        }
+
+        /* Admin Section */
+        .admin-section {
+            background: rgba(255, 204, 0, 0.08);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 204, 0, 0.3);
+            display: none;
+        }
+
+        .admin-section.show {
+            display: block;
+        }
+
+        .admin-section h3 {
+            color: var(--et-yellow);
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 900px) {
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .upload-zone {
+            border: 2px dashed rgba(255, 204, 0, 0.4);
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 204, 0, 0.05);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--et-yellow);
+            background: rgba(255, 204, 0, 0.1);
+        }
+
+        .upload-zone i {
+            font-size: 2rem;
+            color: var(--et-yellow);
+            margin-bottom: 10px;
+        }
+
+        .upload-zone h4 {
+            color: var(--white);
+            margin-bottom: 5px;
+        }
+
+        .upload-zone p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+        }
+
+        .upload-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+            font-size: 0.85rem;
+        }
+
+        .upload-status.success {
+            display: block;
+            background: rgba(77, 140, 60, 0.2);
+            border: 1px solid var(--et-green);
+            color: var(--et-green-light);
+        }
+
+        .upload-status.error {
+            display: block;
+            background: rgba(204, 0, 0, 0.2);
+            border: 1px solid var(--et-red);
+            color: var(--et-red-light);
+        }
+
+        /* Forecast Entry */
+        .forecast-entry {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .forecast-entry h4 {
+            color: var(--white);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .forecast-entry h4 i {
+            color: var(--et-green);
+        }
+
+        .forecast-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .forecast-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .forecast-input-group label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+        }
+
+        .forecast-input-group input {
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--white);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .forecast-input-group input:focus {
+            outline: none;
+            border-color: var(--et-green);
+        }
+
+        .btn-save-forecast {
+            grid-column: 1 / -1;
+            padding: 12px;
+            background: var(--et-green);
+            border: none;
+            border-radius: 8px;
+            color: var(--white);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-save-forecast:hover {
+            background: var(--et-green-dark);
+        }
+
+        /* Filters */
+        .filters-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .filters-section h3 {
+            color: var(--white);
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filters-section h3 i {
+            color: var(--et-yellow);
+        }
+
+        .filters-grid {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .filter-group label {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--white);
+            font-size: 0.9rem;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--et-green);
+        }
+
+        .btn-filter {
+            padding: 10px 20px;
+            background: var(--et-green);
+            border: none;
+            border-radius: 8px;
+            color: var(--white);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .btn-filter:hover {
+            background: var(--et-green-dark);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 1000px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .stat-card.green::before { background: var(--et-green); }
+        .stat-card.yellow::before { background: var(--et-yellow); }
+        .stat-card.red::before { background: var(--et-red); }
+
+        .stat-card h4 {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--white);
+        }
+
+        .stat-card.green .value { color: var(--et-green-light); }
+        .stat-card.yellow .value { color: var(--et-yellow); }
+        .stat-card.red .value { color: var(--et-red-light); }
+
+        .stat-card .sub {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 5px;
+        }
+
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 1000px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--et-green), var(--et-yellow), var(--et-red));
+            border-radius: 16px 16px 0 0;
+        }
+
+        .chart-card h3 {
+            color: var(--white);
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+
+        /* Routes Table */
+        .routes-table-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .routes-table-section h3 {
+            color: var(--white);
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(77, 140, 60, 0.2);
+            color: var(--et-green-light);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .route-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(255, 204, 0, 0.2);
+            color: var(--et-yellow);
+        }
+
+        .variance-positive {
+            color: var(--et-green-light);
+        }
+
+        .variance-negative {
+            color: var(--et-red-light);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .no-data i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: var(--et-yellow);
+        }
+
+        .no-data h3 {
+            margin-bottom: 10px;
+            color: var(--white);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="header-stripes">
+                    <div class="header-stripe green"></div>
+                    <div class="header-stripe yellow"></div>
+                    <div class="header-stripe red"></div>
+                </div>
+                <div class="header-title">
+                    <h1>Routes Analysis</h1>
+                    <p>Passenger Distribution by Route</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <a href="/flight-analysis" class="btn-back">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+                <a href="/" class="btn-back">
+                    <i class="fas fa-home"></i> Home
+                </a>
+                <div class="user-badge" id="userBadge">
+                    <i class="fas fa-user"></i>
+                    <span id="userType">Viewer</span>
+                </div>
+                <button class="btn-logout" onclick="handleLogout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Admin Section -->
+        <section class="admin-section" id="adminSection">
+            <h3><i class="fas fa-cog"></i> Admin Controls</h3>
+            <div class="admin-grid">
+                <div>
+                    <div class="upload-zone" onclick="document.getElementById('manifestInput').click()">
+                        <i class="fas fa-file-alt"></i>
+                        <h4>Upload Manifest</h4>
+                        <p>Upload manifest file (.txt, .csv)</p>
+                    </div>
+                    <input type="file" id="manifestInput" accept=".txt,.csv" style="display: none;" onchange="handleManifestUpload(event)">
+                    <div class="upload-status" id="manifestStatus"></div>
+                </div>
+                <div class="forecast-entry">
+                    <h4><i class="fas fa-edit"></i> Manual Forecast Entry</h4>
+                    <form class="forecast-form" id="forecastForm" onsubmit="saveForecast(event)">
+                        <div class="forecast-input-group">
+                            <label>Date</label>
+                            <input type="date" id="forecastDate" required>
+                        </div>
+                        <div class="forecast-input-group">
+                            <label>ADD (Addis)</label>
+                            <input type="number" id="forecastADD" placeholder="0" min="0">
+                        </div>
+                        <div class="forecast-input-group">
+                            <label>BKK (Bangkok)</label>
+                            <input type="number" id="forecastBKK" placeholder="0" min="0">
+                        </div>
+                        <div class="forecast-input-group">
+                            <label>DEL (Delhi)</label>
+                            <input type="number" id="forecastDEL" placeholder="0" min="0">
+                        </div>
+                        <div class="forecast-input-group">
+                            <label>BOM (Mumbai)</label>
+                            <input type="number" id="forecastBOM" placeholder="0" min="0">
+                        </div>
+                        <div class="forecast-input-group">
+                            <label>MNL (Manila)</label>
+                            <input type="number" id="forecastMNL" placeholder="0" min="0">
+                        </div>
+                        <div class="forecast-input-group">
+                            <label>CGK (Jakarta)</label>
+                            <input type="number" id="forecastCGK" placeholder="0" min="0">
+                        </div>
+                        <div class="forecast-input-group">
+                            <label>Other</label>
+                            <input type="number" id="forecastOther" placeholder="0" min="0">
+                        </div>
+                        <button type="submit" class="btn-save-forecast">
+                            <i class="fas fa-save"></i> Save Forecast
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filters -->
+        <section class="filters-section">
+            <h3><i class="fas fa-filter"></i> Filters</h3>
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label>Route</label>
+                    <select id="routeFilter">
+                        <option value="all">All Routes</option>
+                        <option value="ADD">Addis Ababa (ADD)</option>
+                        <option value="BKK">Bangkok (BKK)</option>
+                        <option value="DEL">Delhi (DEL)</option>
+                        <option value="BOM">Mumbai (BOM)</option>
+                        <option value="MNL">Manila (MNL)</option>
+                        <option value="CGK">Jakarta (CGK)</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Start Date</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div class="filter-group">
+                    <label>End Date</label>
+                    <input type="date" id="endDate">
+                </div>
+                <button class="btn-filter" onclick="applyFilters()">
+                    <i class="fas fa-search"></i> Apply
+                </button>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card green">
+                <h4>Total Passengers</h4>
+                <div class="value" id="totalPassengers">--</div>
+                <div class="sub">From manifests</div>
+            </div>
+            <div class="stat-card yellow">
+                <h4>Top Route</h4>
+                <div class="value" id="topRoute">--</div>
+                <div class="sub">Highest traffic</div>
+            </div>
+            <div class="stat-card green">
+                <h4>Forecast Accuracy</h4>
+                <div class="value" id="forecastAccuracy">--%</div>
+                <div class="sub">Forecast vs Actual</div>
+            </div>
+            <div class="stat-card red">
+                <h4>Active Routes</h4>
+                <div class="value" id="activeRoutes">--</div>
+                <div class="sub">With passengers</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Passengers by Route</h3>
+                <div class="chart-container">
+                    <canvas id="routesChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3>Forecast vs Actual by Route</h3>
+                <div class="chart-container">
+                    <canvas id="forecastChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Routes Table -->
+        <section class="routes-table-section">
+            <h3>Route Details</h3>
+            <div class="table-wrapper">
+                <table id="routesTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Route</th>
+                            <th>Forecast</th>
+                            <th>Actual</th>
+                            <th>Variance</th>
+                            <th>% of Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="6" class="no-data">
+                                <i class="fas fa-route"></i>
+                                <h3>No Data Available</h3>
+                                <p>Upload manifest files and enter forecasts to view route analysis</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const ET_COLORS = {
+            green: '#4D8C3C',
+            greenLight: '#5FA04A',
+            yellow: '#FFCC00',
+            red: '#CC0000'
+        };
+
+        const ROUTE_COLORS = [
+            '#4D8C3C', '#FFCC00', '#CC0000', '#5FA04A', '#E6B800', '#990000', '#3A6B2D'
+        ];
+
+        let charts = {
+            routes: null,
+            forecast: null
+        };
+
+        let currentState = {
+            isAdmin: false
+        };
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/public-status');
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    window.location.href = '/flight-analysis';
+                    return;
+                }
+                
+                currentState.isAdmin = data.admin_authenticated;
+                updateUI();
+                loadData();
+            } catch (error) {
+                window.location.href = '/flight-analysis';
+            }
+        }
+
+        function updateUI() {
+            const userBadge = document.getElementById('userBadge');
+            const userType = document.getElementById('userType');
+            const adminSection = document.getElementById('adminSection');
+            
+            if (currentState.isAdmin) {
+                userBadge.classList.add('admin');
+                userType.textContent = 'Admin';
+                adminSection.classList.add('show');
+            } else {
+                userBadge.classList.remove('admin');
+                userType.textContent = 'Viewer';
+                adminSection.classList.remove('show');
+            }
+        }
+
+        async function handleLogout() {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.href = '/';
+        }
+
+        async function handleManifestUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const statusEl = document.getElementById('manifestStatus');
+            statusEl.className = 'upload-status';
+            statusEl.textContent = 'Uploading...';
+            statusEl.style.display = 'block';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/manifest/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusEl.className = 'upload-status success';
+                    statusEl.innerHTML = `<i class="fas fa-check-circle"></i> ${data.message}`;
+                    loadData();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                statusEl.className = 'upload-status error';
+                statusEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message}`;
+            }
+        }
+
+        async function saveForecast(event) {
+            event.preventDefault();
+            
+            const date = document.getElementById('forecastDate').value;
+            const forecasts = {
+                ADD: parseInt(document.getElementById('forecastADD').value) || 0,
+                BKK: parseInt(document.getElementById('forecastBKK').value) || 0,
+                DEL: parseInt(document.getElementById('forecastDEL').value) || 0,
+                BOM: parseInt(document.getElementById('forecastBOM').value) || 0,
+                MNL: parseInt(document.getElementById('forecastMNL').value) || 0,
+                CGK: parseInt(document.getElementById('forecastCGK').value) || 0,
+                Other: parseInt(document.getElementById('forecastOther').value) || 0
+            };
+            
+            try {
+                const response = await fetch('/api/route-analysis/forecast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date, forecasts })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Forecast saved successfully!');
+                    loadData();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                alert('Error saving forecast: ' + error.message);
+            }
+        }
+
+        function applyFilters() {
+            loadData();
+        }
+
+        async function loadData() {
+            const route = document.getElementById('routeFilter').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            let url = '/api/route-analysis/data?';
+            if (route !== 'all') url += `route=${route}&`;
+            if (startDate) url += `start_date=${startDate}&`;
+            if (endDate) url += `end_date=${endDate}&`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (response.ok && data.routes && data.routes.length > 0) {
+                    updateStats(data);
+                    updateCharts(data);
+                    updateTable(data.routes);
+                } else {
+                    showNoData();
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showNoData();
+            }
+        }
+
+        function updateStats(data) {
+            document.getElementById('totalPassengers').textContent = 
+                data.total_passengers ? data.total_passengers.toLocaleString() : '--';
+            document.getElementById('topRoute').textContent = 
+                data.top_route || '--';
+            document.getElementById('forecastAccuracy').textContent = 
+                data.forecast_accuracy ? `${data.forecast_accuracy.toFixed(1)}%` : '--%';
+            document.getElementById('activeRoutes').textContent = 
+                data.active_routes || '--';
+        }
+
+        function updateCharts(data) {
+            const routes = data.routes || [];
+            const routeLabels = [...new Set(routes.map(r => r.route))];
+            
+            // Aggregate by route
+            const routeTotals = {};
+            const routeForecasts = {};
+            const routeActuals = {};
+            
+            routes.forEach(r => {
+                if (!routeTotals[r.route]) {
+                    routeTotals[r.route] = 0;
+                    routeForecasts[r.route] = 0;
+                    routeActuals[r.route] = 0;
+                }
+                routeTotals[r.route] += r.actual || 0;
+                routeForecasts[r.route] += r.forecast || 0;
+                routeActuals[r.route] += r.actual || 0;
+            });
+            
+            // Routes Pie Chart
+            const routesCtx = document.getElementById('routesChart').getContext('2d');
+            if (charts.routes) charts.routes.destroy();
+            
+            charts.routes = new Chart(routesCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(routeTotals),
+                    datasets: [{
+                        data: Object.values(routeTotals),
+                        backgroundColor: ROUTE_COLORS,
+                        borderWidth: 2,
+                        borderColor: 'rgba(0,0,0,0.3)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: 'rgba(255,255,255,0.8)' }
+                        }
+                    }
+                }
+            });
+            
+            // Forecast vs Actual Bar Chart
+            const forecastCtx = document.getElementById('forecastChart').getContext('2d');
+            if (charts.forecast) charts.forecast.destroy();
+            
+            charts.forecast = new Chart(forecastCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(routeTotals),
+                    datasets: [
+                        {
+                            label: 'Forecast',
+                            data: Object.values(routeForecasts),
+                            backgroundColor: 'rgba(255, 204, 0, 0.7)',
+                            borderColor: ET_COLORS.yellow,
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Actual',
+                            data: Object.values(routeActuals),
+                            backgroundColor: 'rgba(77, 140, 60, 0.7)',
+                            borderColor: ET_COLORS.green,
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: 'rgba(255,255,255,0.8)' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: 'rgba(255,255,255,0.6)' },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        },
+                        y: {
+                            ticks: { color: 'rgba(255,255,255,0.6)' },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTable(routes) {
+            const tbody = document.getElementById('tableBody');
+            
+            if (!routes || routes.length === 0) {
+                showNoData();
+                return;
+            }
+            
+            const totalActual = routes.reduce((sum, r) => sum + (r.actual || 0), 0);
+            
+            tbody.innerHTML = routes.map(r => {
+                const variance = r.actual && r.forecast ? r.actual - r.forecast : 0;
+                const varianceClass = variance >= 0 ? 'variance-positive' : 'variance-negative';
+                const percentOfTotal = totalActual > 0 ? ((r.actual || 0) / totalActual * 100).toFixed(1) : 0;
+                
+                return `
+                    <tr>
+                        <td>${r.date}</td>
+                        <td><span class="route-badge">${r.route}</span></td>
+                        <td>${r.forecast || '--'}</td>
+                        <td>${r.actual || '--'}</td>
+                        <td class="${varianceClass}">${variance >= 0 ? '+' : ''}${variance}</td>
+                        <td>${percentOfTotal}%</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function showNoData() {
+            document.getElementById('tableBody').innerHTML = `
+                <tr>
+                    <td colspan="6" class="no-data">
+                        <i class="fas fa-route"></i>
+                        <h3>No Data Available</h3>
+                        <p>Upload manifest files and enter forecasts to view route analysis</p>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Initialize
+        checkAuth();
+    </script>
+</body>
+</html>

@@ -3,13 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Report - Login</title>
+    <title>Sales Report - Ethiopian Airlines KWI</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --et-green: #5C8C4C;
-            --et-yellow: #FCCC2C;
-            --et-red: #C4242B;
+            /* Ethiopian Airlines Official Colors (CMYK converted) */
+            /* Green: C=70 M=30 Y=90 K=0 */
+            --et-green: #4D8C3C;
+            --et-green-dark: #3A6B2D;
+            --et-green-light: #5FA04A;
+            /* Yellow/Gold: C=0 M=20 Y=100 K=0 */
+            --et-yellow: #FFCC00;
+            --et-yellow-dark: #E6B800;
+            --et-yellow-light: #FFD633;
+            /* Red: C=20 M=100 Y=100 K=0 */
+            --et-red: #CC0000;
+            --et-red-dark: #990000;
+            --et-red-light: #E60000;
+            --white: #FFFFFF;
+            --off-white: #F8F9FA;
+            --gray-100: #E9ECEF;
+            --gray-200: #DEE2E6;
+            --gray-500: #6C757D;
+            --gray-700: #495057;
+            --gray-900: #212529;
         }
 
         * {
@@ -19,35 +38,68 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1a2f1a 0%, #2d4a2d 50%, #1f3520 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a3318 0%, #2d4a2a 50%, #1f3520 100%);
             min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, transparent 0%, rgba(77, 140, 60, 0.03) 33%, transparent 33%),
+                linear-gradient(90deg, transparent 33%, rgba(255, 204, 0, 0.03) 66%, transparent 66%),
+                linear-gradient(90deg, transparent 66%, rgba(204, 0, 0, 0.03) 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Login Modal */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
         }
 
-        .login-container {
-            max-width: 450px;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.04);
+        .login-overlay.hidden {
+            display: none;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(20px);
             border-radius: 24px;
             padding: 50px 40px;
-            border: 2px solid rgba(92, 140, 76, 0.2);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 420px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            text-align: center;
             position: relative;
-            overflow: hidden;
-            animation: fadeIn 0.8s ease;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .login-container::before {
+        .login-card::before {
             content: '';
             position: absolute;
             top: 0;
@@ -55,63 +107,89 @@
             right: 0;
             height: 4px;
             background: linear-gradient(90deg, var(--et-green), var(--et-yellow), var(--et-red));
+            border-radius: 24px 24px 0 0;
         }
 
-        .logo-stripes {
+        .login-logo {
             display: flex;
             justify-content: center;
-            gap: 8px;
-            margin-bottom: 30px;
+            gap: 6px;
+            margin-bottom: 25px;
         }
 
-        .logo-stripe {
+        .login-stripe {
             width: 6px;
-            height: 60px;
+            height: 50px;
             border-radius: 3px;
         }
 
-        .stripe-green { background: linear-gradient(180deg, var(--et-green), #3a5a2f); }
-        .stripe-yellow { background: linear-gradient(180deg, var(--et-yellow), #d9b324); }
-        .stripe-red { background: linear-gradient(180deg, var(--et-red), #9a1c22); }
+        .login-stripe.green { background: var(--et-green); }
+        .login-stripe.yellow { background: var(--et-yellow); }
+        .login-stripe.red { background: var(--et-red); }
 
-        h1 {
-            text-align: center;
-            font-size: 2rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--et-green), var(--et-yellow));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .login-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--white);
             margin-bottom: 10px;
         }
 
-        .subtitle {
-            text-align: center;
+        .login-subtitle {
             color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 40px;
-            font-size: 1rem;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+
+        .login-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .login-tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-tab.active {
+            background: var(--et-green);
+            color: var(--white);
+        }
+
+        .login-tab:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--white);
         }
 
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
+            text-align: left;
         }
 
         .form-label {
             display: block;
-            margin-bottom: 10px;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 8px;
         }
 
         .form-input {
             width: 100%;
-            padding: 16px 20px;
-            border: 2px solid rgba(92, 140, 76, 0.3);
+            padding: 14px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            font-size: 16px;
             background: rgba(255, 255, 255, 0.05);
-            color: white;
+            color: var(--white);
+            font-size: 1rem;
             transition: all 0.3s ease;
         }
 
@@ -119,7 +197,6 @@
             outline: none;
             border-color: var(--et-green);
             background: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 0 20px rgba(92, 140, 76, 0.3);
         }
 
         .form-input::placeholder {
@@ -128,156 +205,1293 @@
 
         .btn {
             width: 100%;
-            padding: 16px;
+            padding: 14px 24px;
             border: none;
             border-radius: 12px;
-            font-size: 16px;
-            font-weight: 700;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            background: linear-gradient(135deg, var(--et-green), #7ba66b);
-            color: white;
-            box-shadow: 0 4px 15px rgba(92, 140, 76, 0.4);
             transition: all 0.3s ease;
-            margin-top: 10px;
         }
 
-        .btn:hover {
+        .btn-primary {
+            background: linear-gradient(135deg, var(--et-green), var(--et-green-dark));
+            color: var(--white);
+            box-shadow: 0 4px 15px rgba(77, 140, 60, 0.4);
+        }
+
+        .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(92, 140, 76, 0.6);
+            box-shadow: 0 6px 25px rgba(77, 140, 60, 0.5);
         }
 
-        .btn:active {
-            transform: translateY(0);
+        .btn-admin {
+            background: linear-gradient(135deg, var(--et-yellow), var(--et-yellow-dark));
+            color: var(--gray-900);
         }
 
-        .alert {
-            padding: 14px 18px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border-left: 4px solid;
-            font-size: 0.9rem;
+        .btn-admin:hover {
+            box-shadow: 0 6px 25px rgba(255, 204, 0, 0.5);
         }
 
-        .alert-error {
-            background: rgba(196, 36, 43, 0.15);
-            border-color: var(--et-red);
+        .error-message {
+            background: rgba(204, 0, 0, 0.2);
+            border: 1px solid var(--et-red);
             color: #ff6b6b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: none;
         }
 
-        .alert-success {
-            background: rgba(92, 140, 76, 0.15);
-            border-color: var(--et-green);
-            color: #7ba66b;
+        .error-message.show {
+            display: block;
+        }
+
+        .admin-fields {
+            display: none;
+        }
+
+        .admin-fields.show {
+            display: block;
         }
 
         .back-link {
-            text-align: center;
-            margin-top: 25px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-top: 20px;
+            transition: color 0.3s ease;
         }
 
-        .back-link a {
+        .back-link:hover {
             color: var(--et-yellow);
-            text-decoration: none;
-            font-weight: 600;
+        }
+
+        /* Dashboard Content */
+        .dashboard-content {
+            display: none;
+        }
+
+        .dashboard-content.show {
+            display: block;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px 25px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-stripes {
+            display: flex;
+            gap: 4px;
+        }
+
+        .header-stripe {
+            width: 4px;
+            height: 40px;
+            border-radius: 2px;
+        }
+
+        .header-stripe.green { background: var(--et-green); }
+        .header-stripe.yellow { background: var(--et-yellow); }
+        .header-stripe.red { background: var(--et-red); }
+
+        .header-title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--white);
+        }
+
+        .header-title p {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(77, 140, 60, 0.2);
+            border: 1px solid var(--et-green);
+            border-radius: 30px;
+            color: var(--et-green-light);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .user-badge.admin {
+            background: rgba(255, 204, 0, 0.2);
+            border-color: var(--et-yellow);
+            color: var(--et-yellow);
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: rgba(204, 0, 0, 0.2);
+            border: 1px solid var(--et-red);
+            border-radius: 8px;
+            color: var(--et-red-light);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
             transition: all 0.3s ease;
         }
 
-        .back-link a:hover {
+        .btn-logout:hover {
+            background: var(--et-red);
+            color: var(--white);
+        }
+
+        .btn-back {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--white);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Filters Section */
+        .filters-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .filters-section h3 {
+            color: var(--white);
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filters-section h3 i {
+            color: var(--et-yellow);
+        }
+
+        .filters-grid {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .filter-group label {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--white);
+            font-size: 0.9rem;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--et-green);
+        }
+
+        .btn-filter {
+            padding: 10px 20px;
+            background: var(--et-green);
+            border: none;
+            border-radius: 8px;
+            color: var(--white);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .btn-filter:hover {
+            background: var(--et-green-dark);
+        }
+
+        /* Admin Upload Section */
+        .admin-section {
+            background: rgba(255, 204, 0, 0.08);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 204, 0, 0.3);
+            display: none;
+        }
+
+        .admin-section.show {
+            display: block;
+        }
+
+        .admin-section h3 {
+            color: var(--et-yellow);
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-zone {
+            border: 2px dashed rgba(255, 204, 0, 0.4);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 204, 0, 0.05);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--et-yellow);
+            background: rgba(255, 204, 0, 0.1);
+        }
+
+        .upload-zone i {
+            font-size: 2.5rem;
+            color: var(--et-yellow);
+            margin-bottom: 15px;
+        }
+
+        .upload-zone p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 10px;
+        }
+
+        .upload-zone span {
+            color: var(--et-yellow);
+            font-weight: 600;
+        }
+
+        .upload-status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .upload-status.success {
+            display: block;
+            background: rgba(77, 140, 60, 0.2);
+            border: 1px solid var(--et-green);
+            color: var(--et-green-light);
+        }
+
+        .upload-status.error {
+            display: block;
+            background: rgba(204, 0, 0, 0.2);
+            border: 1px solid var(--et-red);
+            color: var(--et-red-light);
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+        }
+
+        @media (max-width: 1200px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--et-green), var(--et-yellow), var(--et-red));
+            border-radius: 16px 16px 0 0;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .chart-title {
+            color: var(--white);
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .chart-toggles {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .toggle-btn {
+            padding: 6px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--et-green);
+            border-color: var(--et-green);
+            color: var(--white);
+        }
+
+        .toggle-btn:hover:not(.active) {
+            border-color: var(--et-green);
+            color: var(--et-green-light);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+        }
+
+        .dual-chart-container {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .dual-chart-container.show {
+            display: grid;
+        }
+
+        .dual-chart-container .chart-wrapper {
+            height: 300px;
+            position: relative;
+        }
+
+        .single-chart-container {
+            display: block;
+        }
+
+        .single-chart-container.hidden {
+            display: none;
+        }
+
+        .chart-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--et-yellow);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 4px;
+        }
+
+        /* Data Info */
+        .data-info {
+            background: rgba(77, 140, 60, 0.15);
+            border: 1px solid var(--et-green);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .data-info i {
+            font-size: 1.5rem;
             color: var(--et-green);
+        }
+
+        .data-info-text h4 {
+            color: var(--white);
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .data-info-text p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .no-data i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: var(--et-yellow);
+        }
+
+        .no-data h3 {
+            margin-bottom: 10px;
+            color: var(--white);
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--et-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .header-right {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            .dual-chart-container {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="logo-stripes">
-            <div class="logo-stripe stripe-green"></div>
-            <div class="logo-stripe stripe-yellow"></div>
-            <div class="logo-stripe stripe-red"></div>
-        </div>
-        
-        <h1>Sales Report</h1>
-        <p class="subtitle">Enter password to access analytics</p>
-
-        <div id="alert-container"></div>
-
-        <form id="login-form" onsubmit="handleLogin(event)">
-            <div class="form-group">
-                <label class="form-label" for="password">Password</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    class="form-input" 
-                    placeholder="Enter access password"
-                    required
-                    autocomplete="off"
-                >
+    <!-- Login Overlay -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-card">
+            <div class="login-logo">
+                <div class="login-stripe green"></div>
+                <div class="login-stripe yellow"></div>
+                <div class="login-stripe red"></div>
+            </div>
+            <h2 class="login-title">Sales Report</h2>
+            <p class="login-subtitle">Enter password to access the dashboard</p>
+            
+            <div class="login-tabs">
+                <button class="login-tab active" data-tab="public" onclick="switchTab('public')">
+                    <i class="fas fa-eye"></i> View Only
+                </button>
+                <button class="login-tab" data-tab="admin" onclick="switchTab('admin')">
+                    <i class="fas fa-user-shield"></i> Admin
+                </button>
             </div>
 
-            <button type="submit" class="btn">Access Dashboard</button>
-        </form>
+            <div class="error-message" id="errorMessage"></div>
 
-        <div class="back-link">
-            <a href="/">← Back to Home</a>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group admin-fields" id="adminFields">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="username" placeholder="Admin username">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="password" placeholder="Enter password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Access Dashboard
+                </button>
+            </form>
+
+            <a href="/" class="back-link">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
+        </div>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div class="container dashboard-content" id="dashboardContent">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="header-stripes">
+                    <div class="header-stripe green"></div>
+                    <div class="header-stripe yellow"></div>
+                    <div class="header-stripe red"></div>
+                </div>
+                <div class="header-title">
+                    <h1>Sales Report Dashboard</h1>
+                    <p>Ethiopian Airlines - Kuwait Office</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <a href="/" class="btn-back">
+                    <i class="fas fa-home"></i> Home
+                </a>
+                <div class="user-badge" id="userBadge">
+                    <i class="fas fa-user"></i>
+                    <span id="userType">Viewer</span>
+                </div>
+                <button class="btn-logout" onclick="handleLogout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Data Info -->
+        <div class="data-info" id="dataInfo" style="display: none;">
+            <i class="fas fa-database"></i>
+            <div class="data-info-text">
+                <h4 id="dataFilename">No data loaded</h4>
+                <p id="dataDetails">Upload an Excel file to view charts</p>
+            </div>
+        </div>
+
+        <!-- Admin Upload Section -->
+        <section class="admin-section" id="adminSection">
+            <h3><i class="fas fa-upload"></i> Upload Sales Report</h3>
+            <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Drag and drop your Excel file here, or <span>click to browse</span></p>
+                <p style="font-size: 0.85rem; color: rgba(255,255,255,0.5);">Supports .xlsx and .xls files</p>
+            </div>
+            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;" onchange="handleFileUpload(event)">
+            <div class="upload-status" id="uploadStatus"></div>
+        </section>
+
+        <!-- Filters Section -->
+        <section class="filters-section">
+            <h3><i class="fas fa-filter"></i> Filters</h3>
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label>Start Date</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div class="filter-group">
+                    <label>End Date</label>
+                    <input type="date" id="endDate">
+                </div>
+                <button class="btn-filter" onclick="applyFilters()">
+                    <i class="fas fa-search"></i> Apply Filters
+                </button>
+            </div>
+        </section>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid" id="chartsGrid">
+            <!-- Chart 1: By Report (Daily/Monthly) -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Sales by Report Period</h3>
+                    <div class="chart-toggles">
+                        <button class="toggle-btn active" data-chart="report" data-mode="revenue" onclick="toggleDataMode('report', 'revenue')">Revenue</button>
+                        <button class="toggle-btn" data-chart="report" data-mode="tickets" onclick="toggleDataMode('report', 'tickets')">Tickets</button>
+                        <button class="toggle-btn" data-chart="report" data-mode="both" onclick="toggleDataMode('report', 'both')">Both</button>
+                    </div>
+                </div>
+                <div class="chart-toggles" style="margin-bottom: 15px;">
+                    <button class="toggle-btn active" data-chart="report" data-time="daily" onclick="toggleTimeMode('report', 'daily')">Daily</button>
+                    <button class="toggle-btn" data-chart="report" data-time="monthly" onclick="toggleTimeMode('report', 'monthly')">Monthly</button>
+                </div>
+                <div class="single-chart-container" id="reportSingleContainer">
+                    <div class="chart-container">
+                        <canvas id="reportChart"></canvas>
+                    </div>
+                </div>
+                <div class="dual-chart-container" id="reportDualContainer">
+                    <div class="chart-wrapper">
+                        <canvas id="reportRevenueChart"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="reportTicketsChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-stats" id="reportStats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="reportTotal">-</div>
+                        <div class="stat-label">Total Revenue</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="reportCount">-</div>
+                        <div class="stat-label">Total Tickets</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart 2: By Agent -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Sales by Agent</h3>
+                    <div class="chart-toggles">
+                        <button class="toggle-btn active" data-chart="agent" data-mode="revenue" onclick="toggleDataMode('agent', 'revenue')">Revenue</button>
+                        <button class="toggle-btn" data-chart="agent" data-mode="tickets" onclick="toggleDataMode('agent', 'tickets')">Tickets</button>
+                        <button class="toggle-btn" data-chart="agent" data-mode="both" onclick="toggleDataMode('agent', 'both')">Both</button>
+                    </div>
+                </div>
+                <div class="single-chart-container" id="agentSingleContainer">
+                    <div class="chart-container">
+                        <canvas id="agentChart"></canvas>
+                    </div>
+                </div>
+                <div class="dual-chart-container" id="agentDualContainer">
+                    <div class="chart-wrapper">
+                        <canvas id="agentRevenueChart"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="agentTicketsChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-stats" id="agentStats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="agentTotal">-</div>
+                        <div class="stat-label">Top Agent Revenue</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="agentCount">-</div>
+                        <div class="stat-label">Active Agents</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart 3: By Days of Week -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Sales by Day of Week</h3>
+                    <div class="chart-toggles">
+                        <button class="toggle-btn active" data-chart="days" data-mode="revenue" onclick="toggleDataMode('days', 'revenue')">Revenue</button>
+                        <button class="toggle-btn" data-chart="days" data-mode="tickets" onclick="toggleDataMode('days', 'tickets')">Tickets</button>
+                        <button class="toggle-btn" data-chart="days" data-mode="both" onclick="toggleDataMode('days', 'both')">Both</button>
+                    </div>
+                </div>
+                <div class="single-chart-container" id="daysSingleContainer">
+                    <div class="chart-container">
+                        <canvas id="daysChart"></canvas>
+                    </div>
+                </div>
+                <div class="dual-chart-container" id="daysDualContainer">
+                    <div class="chart-wrapper">
+                        <canvas id="daysRevenueChart"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="daysTicketsChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-stats" id="daysStats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="daysBest">-</div>
+                        <div class="stat-label">Best Day</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="daysAvg">-</div>
+                        <div class="stat-label">Daily Average</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart 4: By Hours -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Sales by Hour (24h)</h3>
+                    <div class="chart-toggles">
+                        <button class="toggle-btn active" data-chart="hours" data-mode="revenue" onclick="toggleDataMode('hours', 'revenue')">Revenue</button>
+                        <button class="toggle-btn" data-chart="hours" data-mode="tickets" onclick="toggleDataMode('hours', 'tickets')">Tickets</button>
+                        <button class="toggle-btn" data-chart="hours" data-mode="both" onclick="toggleDataMode('hours', 'both')">Both</button>
+                    </div>
+                </div>
+                <div class="single-chart-container" id="hoursSingleContainer">
+                    <div class="chart-container">
+                        <canvas id="hoursChart"></canvas>
+                    </div>
+                </div>
+                <div class="dual-chart-container" id="hoursDualContainer">
+                    <div class="chart-wrapper">
+                        <canvas id="hoursRevenueChart"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="hoursTicketsChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-stats" id="hoursStats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="hoursPeak">-</div>
+                        <div class="stat-label">Peak Hour</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="hoursAvg">-</div>
+                        <div class="stat-label">Hourly Average</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Check if already authenticated
+        // Ethiopian Airlines colors
+        const ET_COLORS = {
+            green: '#4D8C3C',
+            greenDark: '#3A6B2D',
+            greenLight: '#5FA04A',
+            yellow: '#FFCC00',
+            yellowDark: '#E6B800',
+            red: '#CC0000',
+            redDark: '#990000'
+        };
+
+        // Chart instances
+        let charts = {
+            report: null,
+            reportRevenue: null,
+            reportTickets: null,
+            agent: null,
+            agentRevenue: null,
+            agentTickets: null,
+            days: null,
+            daysRevenue: null,
+            daysTickets: null,
+            hours: null,
+            hoursRevenue: null,
+            hoursTickets: null
+        };
+
+        // Current state
+        let currentState = {
+            isAdmin: false,
+            dataMode: {
+                report: 'revenue',
+                agent: 'revenue',
+                days: 'revenue',
+                hours: 'revenue'
+            },
+            timeMode: {
+                report: 'daily'
+            },
+            filters: {
+                startDate: null,
+                endDate: null
+            }
+        };
+
+        // Login tab switching
+        function switchTab(tab) {
+            document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+            
+            const adminFields = document.getElementById('adminFields');
+            const loginBtn = document.getElementById('loginBtn');
+            
+            if (tab === 'admin') {
+                adminFields.classList.add('show');
+                loginBtn.classList.remove('btn-primary');
+                loginBtn.classList.add('btn-admin');
+                loginBtn.innerHTML = '<i class="fas fa-user-shield"></i> Admin Login';
+            } else {
+                adminFields.classList.remove('show');
+                loginBtn.classList.remove('btn-admin');
+                loginBtn.classList.add('btn-primary');
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Access Dashboard';
+            }
+        }
+
+        // Handle login
+        async function handleLogin(event) {
+            event.preventDefault();
+            const errorMsg = document.getElementById('errorMessage');
+            errorMsg.classList.remove('show');
+            
+            const activeTab = document.querySelector('.login-tab.active').dataset.tab;
+            const password = document.getElementById('password').value;
+            
+            try {
+                if (activeTab === 'admin') {
+                    const username = document.getElementById('username').value;
+                    const response = await fetch('/api/admin/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+                    
+                    const data = await response.json();
+                    if (response.ok) {
+                        currentState.isAdmin = true;
+                        showDashboard();
+                    } else {
+                        throw new Error(data.error || 'Invalid credentials');
+                    }
+                } else {
+                    const response = await fetch('/api/auth/public-login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password })
+                    });
+                    
+                    const data = await response.json();
+                    if (response.ok) {
+                        currentState.isAdmin = false;
+                        showDashboard();
+                    } else {
+                        throw new Error(data.error || 'Invalid password');
+                    }
+                }
+            } catch (error) {
+                errorMsg.textContent = error.message;
+                errorMsg.classList.add('show');
+            }
+        }
+
+        // Show dashboard
+        function showDashboard() {
+            document.getElementById('loginOverlay').classList.add('hidden');
+            document.getElementById('dashboardContent').classList.add('show');
+            
+            const userBadge = document.getElementById('userBadge');
+            const userType = document.getElementById('userType');
+            
+            if (currentState.isAdmin) {
+                userBadge.classList.add('admin');
+                userType.textContent = 'Admin';
+                document.getElementById('adminSection').classList.add('show');
+            } else {
+                userBadge.classList.remove('admin');
+                userType.textContent = 'Viewer';
+                document.getElementById('adminSection').classList.remove('show');
+            }
+            
+            loadDataInfo();
+            loadAllCharts();
+        }
+
+        // Handle logout
+        async function handleLogout() {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            location.reload();
+        }
+
+        // Load data info
+        async function loadDataInfo() {
+            try {
+                const response = await fetch('/api/data');
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('dataInfo').style.display = 'flex';
+                    document.getElementById('dataFilename').textContent = data.filename;
+                    document.getElementById('dataDetails').textContent = 
+                        `Uploaded: ${new Date(data.upload_date).toLocaleDateString()} | ${data.total_rows} records`;
+                }
+            } catch (error) {
+                console.log('No data available');
+            }
+        }
+
+        // Handle file upload
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const statusEl = document.getElementById('uploadStatus');
+            statusEl.className = 'upload-status';
+            statusEl.textContent = 'Uploading...';
+            statusEl.style.display = 'block';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusEl.className = 'upload-status success';
+                    statusEl.innerHTML = `<i class="fas fa-check-circle"></i> ${data.message} - ${data.total_rows} records processed`;
+                    loadDataInfo();
+                    loadAllCharts();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                statusEl.className = 'upload-status error';
+                statusEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message}`;
+            }
+        }
+
+        // Toggle data mode (revenue/tickets/both)
+        function toggleDataMode(chartType, mode) {
+            currentState.dataMode[chartType] = mode;
+            
+            // Update button states
+            document.querySelectorAll(`[data-chart="${chartType}"][data-mode]`).forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+            
+            // Toggle containers
+            const singleContainer = document.getElementById(`${chartType}SingleContainer`);
+            const dualContainer = document.getElementById(`${chartType}DualContainer`);
+            
+            if (mode === 'both') {
+                singleContainer.classList.add('hidden');
+                dualContainer.classList.add('show');
+            } else {
+                singleContainer.classList.remove('hidden');
+                dualContainer.classList.remove('show');
+            }
+            
+            loadChart(chartType);
+        }
+
+        // Toggle time mode (daily/monthly)
+        function toggleTimeMode(chartType, mode) {
+            currentState.timeMode[chartType] = mode;
+            
+            document.querySelectorAll(`[data-chart="${chartType}"][data-time]`).forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.time === mode);
+            });
+            
+            loadChart(chartType);
+        }
+
+        // Apply filters
+        function applyFilters() {
+            currentState.filters.startDate = document.getElementById('startDate').value || null;
+            currentState.filters.endDate = document.getElementById('endDate').value || null;
+            loadAllCharts();
+        }
+
+        // Load all charts
+        function loadAllCharts() {
+            loadChart('report');
+            loadChart('agent');
+            loadChart('days');
+            loadChart('hours');
+        }
+
+        // Load single chart
+        async function loadChart(chartType) {
+            const chartIdMap = {
+                report: 'by_report',
+                agent: 'by_agent',
+                days: 'by_days',
+                hours: 'by_hours'
+            };
+            
+            const dataMode = currentState.dataMode[chartType];
+            const timeMode = currentState.timeMode[chartType] || 'daily';
+            
+            let url = `/api/charts/data/${chartIdMap[chartType]}?time_mode=${timeMode}`;
+            
+            if (currentState.filters.startDate) {
+                url += `&start_date=${currentState.filters.startDate}`;
+            }
+            if (currentState.filters.endDate) {
+                url += `&end_date=${currentState.filters.endDate}`;
+            }
+            
+            try {
+                if (dataMode === 'both') {
+                    // Load both revenue and tickets
+                    const [revenueRes, ticketsRes] = await Promise.all([
+                        fetch(url + '&data_mode=revenue'),
+                        fetch(url + '&data_mode=tickets')
+                    ]);
+                    
+                    const revenueData = await revenueRes.json();
+                    const ticketsData = await ticketsRes.json();
+                    
+                    renderDualChart(chartType, revenueData, ticketsData);
+                } else {
+                    const response = await fetch(url + `&data_mode=${dataMode}`);
+                    const data = await response.json();
+                    renderSingleChart(chartType, data, dataMode);
+                }
+            } catch (error) {
+                console.error(`Error loading ${chartType} chart:`, error);
+            }
+        }
+
+        // Render single chart
+        function renderSingleChart(chartType, data, dataMode) {
+            const canvasId = `${chartType}Chart`;
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            
+            if (charts[chartType]) {
+                charts[chartType].destroy();
+            }
+            
+            const chartConfig = getChartConfig(chartType, data, dataMode);
+            charts[chartType] = new Chart(ctx, chartConfig);
+            
+            updateChartStats(chartType, data, dataMode);
+        }
+
+        // Render dual charts
+        function renderDualChart(chartType, revenueData, ticketsData) {
+            const revenueCtx = document.getElementById(`${chartType}RevenueChart`).getContext('2d');
+            const ticketsCtx = document.getElementById(`${chartType}TicketsChart`).getContext('2d');
+            
+            if (charts[`${chartType}Revenue`]) {
+                charts[`${chartType}Revenue`].destroy();
+            }
+            if (charts[`${chartType}Tickets`]) {
+                charts[`${chartType}Tickets`].destroy();
+            }
+            
+            charts[`${chartType}Revenue`] = new Chart(revenueCtx, getChartConfig(chartType, revenueData, 'revenue', true));
+            charts[`${chartType}Tickets`] = new Chart(ticketsCtx, getChartConfig(chartType, ticketsData, 'tickets', true));
+            
+            updateChartStats(chartType, revenueData, 'both', ticketsData);
+        }
+
+        // Get chart configuration
+        function getChartConfig(chartType, data, dataMode, isSmall = false) {
+            const labels = data.labels || [];
+            const values = data.data || [];
+            
+            const isLine = chartType === 'report';
+            const label = dataMode === 'revenue' ? 'Revenue (KWD)' : 'Tickets Count';
+            
+            return {
+                type: isLine ? 'line' : 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: values,
+                        backgroundColor: dataMode === 'revenue' 
+                            ? 'rgba(255, 204, 0, 0.7)' 
+                            : 'rgba(77, 140, 60, 0.7)',
+                        borderColor: dataMode === 'revenue' ? ET_COLORS.yellow : ET_COLORS.green,
+                        borderWidth: 2,
+                        fill: isLine,
+                        tension: 0.4,
+                        pointBackgroundColor: dataMode === 'revenue' ? ET_COLORS.yellow : ET_COLORS.green,
+                        pointRadius: isSmall ? 3 : 4,
+                        pointHoverRadius: isSmall ? 5 : 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: !isSmall,
+                            labels: {
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: ET_COLORS.yellow,
+                            bodyColor: '#fff',
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    if (dataMode === 'revenue') {
+                                        return `Revenue: KWD ${value.toLocaleString()}`;
+                                    }
+                                    return `Tickets: ${value.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.6)',
+                                maxRotation: 45,
+                                font: { size: isSmall ? 9 : 11 }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.6)',
+                                font: { size: isSmall ? 9 : 11 },
+                                callback: function(value) {
+                                    if (dataMode === 'revenue') {
+                                        return 'KWD ' + value.toLocaleString();
+                                    }
+                                    return value.toLocaleString();
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            }
+                        }
+                    }
+                }
+            };
+        }
+
+        // Update chart statistics
+        function updateChartStats(chartType, data, dataMode, ticketsData = null) {
+            const values = data.data || [];
+            const labels = data.labels || [];
+            
+            if (chartType === 'report') {
+                const total = values.reduce((a, b) => a + b, 0);
+                document.getElementById('reportTotal').textContent = 
+                    dataMode === 'tickets' ? '-' : `KWD ${total.toLocaleString()}`;
+                document.getElementById('reportCount').textContent = 
+                    dataMode === 'revenue' && !ticketsData ? '-' : 
+                    (ticketsData ? ticketsData.data.reduce((a, b) => a + b, 0).toLocaleString() : total.toLocaleString());
+            } else if (chartType === 'agent') {
+                const maxVal = Math.max(...values);
+                document.getElementById('agentTotal').textContent = 
+                    dataMode === 'revenue' ? `KWD ${maxVal.toLocaleString()}` : maxVal.toLocaleString();
+                document.getElementById('agentCount').textContent = labels.length;
+            } else if (chartType === 'days') {
+                const maxIdx = values.indexOf(Math.max(...values));
+                const avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+                document.getElementById('daysBest').textContent = labels[maxIdx] || '-';
+                document.getElementById('daysAvg').textContent = 
+                    dataMode === 'revenue' ? `KWD ${Math.round(avg).toLocaleString()}` : Math.round(avg).toLocaleString();
+            } else if (chartType === 'hours') {
+                const maxIdx = values.indexOf(Math.max(...values));
+                const avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+                document.getElementById('hoursPeak').textContent = labels[maxIdx] || '-';
+                document.getElementById('hoursAvg').textContent = 
+                    dataMode === 'revenue' ? `KWD ${Math.round(avg).toLocaleString()}` : Math.round(avg).toLocaleString();
+            }
+        }
+
+        // Check authentication on page load
         async function checkAuth() {
             try {
-                const response = await fetch('/api/public/status', {
-                    credentials: 'include'
-                });
+                const response = await fetch('/api/auth/public-status');
                 const data = await response.json();
                 
                 if (data.authenticated) {
-                    window.location.href = '/dashboard';
+                    currentState.isAdmin = data.admin_authenticated;
+                    showDashboard();
                 }
             } catch (error) {
-                console.error('Auth check error:', error);
+                console.log('Not authenticated');
             }
         }
 
-        async function handleLogin(event) {
-            event.preventDefault();
+        // Drag and drop handling
+        const uploadZone = document.getElementById('uploadZone');
+        if (uploadZone) {
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.style.borderColor = ET_COLORS.yellow;
+                uploadZone.style.background = 'rgba(255, 204, 0, 0.15)';
+            });
             
-            const password = document.getElementById('password').value;
-            const alertContainer = document.getElementById('alert-container');
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.style.borderColor = 'rgba(255, 204, 0, 0.4)';
+                uploadZone.style.background = 'rgba(255, 204, 0, 0.05)';
+            });
             
-            if (!password) {
-                alertContainer.innerHTML = '<div class="alert alert-error">Please enter a password.</div>';
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/public/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password }),
-                    credentials: 'include'
-                });
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.style.borderColor = 'rgba(255, 204, 0, 0.4)';
+                uploadZone.style.background = 'rgba(255, 204, 0, 0.05)';
                 
-                const data = await response.json();
-                
-                if (response.ok && data.success) {
-                    alertContainer.innerHTML = '<div class="alert alert-success">Access granted! Redirecting...</div>';
-                    setTimeout(() => {
-                        window.location.href = '/dashboard';
-                    }, 1000);
-                } else {
-                    alertContainer.innerHTML = '<div class="alert alert-error">Invalid password. Please try again.</div>';
-                    document.getElementById('password').value = '';
-                    document.getElementById('password').focus();
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    document.getElementById('fileInput').files = e.dataTransfer.files;
+                    handleFileUpload({ target: { files: [file] } });
                 }
-            } catch (error) {
-                console.error('Login error:', error);
-                alertContainer.innerHTML = '<div class="alert alert-error">Connection error. Please try again.</div>';
-            }
+            });
         }
 
-        // Check auth on page load
+        // Initialize
         checkAuth();
     </script>
 </body>
 </html>
-
