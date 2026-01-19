@@ -3,19 +3,11 @@ services:
     name: ethiopian-airlines-dashboard
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn src.main:app
+    startCommand: gunicorn src.main:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: SECRET_KEY
         generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: ethiopian-airlines-db
-          property: connectionString
-
-databases:
-  - name: ethiopian-airlines-db
-    databaseName: ethiopian_airlines
-    user: ethiopian_admin
-
+      - key: PUBLIC_VIEW_PASSWORD
+        value: ethiopian2024
