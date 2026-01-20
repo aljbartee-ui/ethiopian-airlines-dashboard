@@ -9,6 +9,28 @@ import math
 
 charts_bp = Blueprint('charts', __name__)
 
+def get_column_value(row, possible_names):
+    """Get value from row using multiple possible column names"""
+    for name in possible_names:
+        if name in row:
+            return row[name]
+        # Try with stripped whitespace
+        stripped_name = name.strip() if isinstance(name, str) else name
+        if stripped_name in row:
+            return row[stripped_name]
+    return None
+
+def find_best_data_sheet(data):
+    """Find the sheet with the most data rows"""
+    best_sheet = None
+    max_rows = 0
+    for sheet_name, sheet_data in data.items():
+        row_count = sheet_data.get('row_count', 0)
+        if row_count > max_rows:
+            max_rows = row_count
+            best_sheet = sheet_name
+    return best_sheet
+
 def create_chart_svg(title, data, chart_type='bar', width=700, height=450, data_mode='revenue'):
     """Create SVG charts without external dependencies"""
     
@@ -167,18 +189,30 @@ def safe_float(value):
 def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily', start_date=None, end_date=None):
     """Process sales data for specific chart type"""
     try:
-        sheet_name = list(data.keys())[0]
-        sheet_data = data[sheet_name]['data']
+        # Find the best sheet with actual data
+        best_sheet = find_best_data_sheet(data)
+        if not best_sheet:
+            return {}
+        
+        sheet_data = data[best_sheet]['data']
         
         if not sheet_data:
             return {}
+        
+        # Define possible column names for each field
+        date_columns = ['DATE', 'Date', 'date']
+        income_columns = ['INCOME', 'Income', 'income', 'Amount', 'amount', 'Revenue', 'revenue']
+        agent_columns = ['Issuing agent', 'Issuing Agent', 'Agent', 'agent', 'AGENT']
+        time_columns = ['Time', 'TIME', 'time']
+        time_24_columns = ['TIME 24HRS', 'Time 24hrs', 'TIME24HRS', 'time_24hrs']
+        day_columns = ['Day', 'DAY', 'day', 'DayOfWeek']
         
         # Filter by date range if provided
         filtered_data = sheet_data
         if start_date or end_date:
             filtered_data = []
             for row in sheet_data:
-                date_val = row.get('DATE')
+                date_val = get_column_value(row, date_columns)
                 if date_val:
                     try:
                         if isinstance(date_val, str):
@@ -201,7 +235,7 @@ def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily',
         if chart_type == 'by_report':
             time_data = defaultdict(float)
             for row in filtered_data:
-                date_val = row.get('DATE')
+                date_val = get_column_value(row, date_columns)
                 if date_val:
                     try:
                         if isinstance(date_val, str):
@@ -217,7 +251,7 @@ def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily',
                             key = date_str
                         
                         if data_mode == 'revenue':
-                            value = safe_float(row.get('INCOME', 0))
+                            value = safe_float(get_column_value(row, income_columns))
                         else:  # tickets
                             value = 1
                         time_data[key] += value
@@ -231,9 +265,11 @@ def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily',
         elif chart_type == 'by_agent':
             agent_data = defaultdict(float)
             for row in filtered_data:
-                agent = row.get('Issuing agent', 'Unknown')
+                agent = get_column_value(row, agent_columns)
+                if agent is None:
+                    agent = 'Unknown'
                 if data_mode == 'revenue':
-                    value = safe_float(row.get('INCOME', 0))
+                    value = safe_float(get_column_value(row, income_columns))
                 else:  # tickets
                     value = 1
                 agent_data[agent] += value
@@ -248,25 +284,31 @@ def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily',
             days_data = defaultdict(float)
             
             for row in filtered_data:
-                date_val = row.get('DATE')
-                if date_val:
-                    try:
-                        if isinstance(date_val, str):
-                            date_str = date_val.split(' ')[0]
-                        else:
-                            date_str = str(date_val).split(' ')[0]
-                        
-                        # Parse date and get day of week
-                        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-                        day_name = date_obj.strftime('%A')
-                        
-                        if data_mode == 'revenue':
-                            value = safe_float(row.get('INCOME', 0))
-                        else:  # tickets
-                            value = 1
-                        days_data[day_name] += value
-                    except:
-                        pass
+                # First try to get day from Day column
+                day_name = get_column_value(row, day_columns)
+                
+                # If no Day column, try to parse from DATE
+                if not day_name:
+                    date_val = get_column_value(row, date_columns)
+                    if date_val:
+                        try:
+                            if isinstance(date_val, str):
+                                date_str = date_val.split(' ')[0]
+                            else:
+                                date_str = str(date_val).split(' ')[0]
+                            
+                            # Parse date and get day of week
+                            date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+                            day_name = date_obj.strftime('%A')
+                        except:
+                            pass
+                
+                if day_name:
+                    if data_mode == 'revenue':
+                        value = safe_float(get_column_value(row, income_columns))
+                    else:  # tickets
+                        value = 1
+                    days_data[day_name] += value
             
             # Return in order Mon-Sun
             ordered_data = {day: days_data.get(day, 0) for day in days_order}
@@ -279,7 +321,7 @@ def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily',
                 hour_int = None
                 
                 # Try column G 'Time' first (integer format like 1422, 23, 1513)
-                time_val = row.get('Time')
+                time_val = get_column_value(row, time_columns)
                 if time_val is not None:
                     try:
                         time_int = int(time_val)
@@ -293,7 +335,7 @@ def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily',
                 
                 # Fallback to TIME 24HRS column if Time column failed
                 if hour_int is None:
-                    time_24 = row.get('TIME 24HRS')
+                    time_24 = get_column_value(row, time_24_columns)
                     if time_24:
                         try:
                             # Handle datetime strings like '1900-01-01 14:22:00'
@@ -311,7 +353,7 @@ def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily',
                 # Add to hourly data if we successfully extracted an hour
                 if hour_int is not None and 0 <= hour_int <= 23:
                     if data_mode == 'revenue':
-                        value = safe_float(row.get('INCOME', 0))
+                        value = safe_float(get_column_value(row, income_columns))
                     else:  # tickets
                         value = 1
                     hourly_data[f"{hour_int:02d}:00"] += value
@@ -324,6 +366,8 @@ def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily',
         
     except Exception as e:
         print(f"Error processing chart data: {e}")
+        import traceback
+        traceback.print_exc()
         return {}
 
 @charts_bp.route('/charts/generate/<chart_id>')
@@ -390,6 +434,8 @@ def generate_single_chart(chart_id):
         
     except Exception as e:
         print(f"Error generating chart: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Chart generation failed: {str(e)}'}), 500
 
 @charts_bp.route('/charts/options')
@@ -399,42 +445,33 @@ def get_chart_options():
         'charts': [
             {
                 'id': 'by_report',
-                'name': 'By Report (Time-based)',
-                'has_time_toggle': True,
-                'time_modes': ['daily', 'monthly']
+                'title': 'Sales by Report Period',
+                'description': 'Daily or monthly sales trends',
+                'supports_time_mode': True
             },
             {
                 'id': 'by_agent',
-                'name': 'By Agent',
-                'has_time_toggle': False
+                'title': 'Sales by Agent',
+                'description': 'Top performing agents'
             },
             {
                 'id': 'by_days',
-                'name': 'By Days of Week',
-                'has_time_toggle': False
+                'title': 'Sales by Day of Week',
+                'description': 'Sales distribution across weekdays'
             },
             {
                 'id': 'by_hours',
-                'name': 'By Hours (24h)',
-                'has_time_toggle': False
+                'title': 'Sales by Hour',
+                'description': 'Hourly sales patterns'
             }
-        ]
+        ],
+        'data_modes': ['revenue', 'tickets'],
+        'time_modes': ['daily', 'monthly']
     })
 
-
-
-
-# New JSON endpoints for interactive charts (added for Chart.js support)
 @charts_bp.route('/charts/data/<chart_id>')
-def get_chart_data_json(chart_id):
-    """Get chart data as JSON for Chart.js (keeps SVG endpoints working too)"""
-    # Check if user is authenticated (either admin or public)
-    is_admin = session.get('admin_logged_in', False)
-    is_public = session.get('public_authenticated', False)
-    
-    if not is_admin and not is_public:
-        return jsonify({'error': 'Authentication required', 'labels': [], 'data': []}), 401
-    
+def get_chart_data(chart_id):
+    """Get raw chart data for frontend rendering"""
     try:
         # Get parameters
         data_mode = request.args.get('data_mode', 'revenue')
@@ -445,43 +482,36 @@ def get_chart_data_json(chart_id):
         # Get active sales data
         active_data = SalesData.query.filter_by(is_active=True).first()
         if not active_data:
-            return jsonify({'error': 'No active sales data found', 'labels': [], 'data': []}), 200
+            return jsonify({'error': 'No active sales data found'}), 404
         
         data = active_data.get_data()
         if not data:
-            return jsonify({'error': 'No data available', 'labels': [], 'data': []}), 200
+            return jsonify({'error': 'No data available'}), 404
         
         # Process data for the specific chart
         chart_data = process_chart_data(data, chart_id, data_mode, time_mode, start_date, end_date)
         
-        if not chart_data:
-            return jsonify({'labels': [], 'data': []}), 200
-        
-        # Convert to Chart.js format
-        labels = list(chart_data.keys())
-        values = list(chart_data.values())
-        
-        # Calculate total for current data_mode
+        # Calculate statistics
+        values = list(chart_data.values()) if chart_data else []
         total = sum(values)
-        
-        # Also calculate total for the other data_mode
-        other_mode = 'tickets' if data_mode == 'revenue' else 'revenue'
-        other_chart_data = process_chart_data(data, chart_id, other_mode, time_mode, start_date, end_date)
-        other_total = sum(other_chart_data.values()) if other_chart_data else 0
+        avg = total / len(values) if values else 0
         
         return jsonify({
             'success': True,
-            'labels': labels,
-            'data': values,
-            'total': total,
-            'total_revenue': total if data_mode == 'revenue' else other_total,
-            'total_tickets': total if data_mode == 'tickets' else other_total,
+            'chart_id': chart_id,
             'data_mode': data_mode,
             'time_mode': time_mode if chart_id == 'by_report' else None,
-            'chart_id': chart_id
+            'labels': list(chart_data.keys()),
+            'values': values,
+            'statistics': {
+                'total': total,
+                'average': avg,
+                'max': max(values) if values else 0,
+                'min': min(values) if values else 0,
+                'count': len(values)
+            }
         })
         
     except Exception as e:
         print(f"Error getting chart data: {e}")
-        return jsonify({'error': str(e), 'labels': [], 'data': []}), 200
-
+        return jsonify({'error': str(e)}), 500

@@ -21,10 +21,18 @@ def process_excel_file(file_content, filename):
         for sheet_name in workbook.sheetnames:
             sheet = workbook[sheet_name]
             
-            # Get headers from first row
+            # Get headers from first row and clean them (strip whitespace)
             headers = []
             for cell in sheet[1]:
-                headers.append(cell.value if cell.value is not None else '')
+                header = cell.value if cell.value is not None else ''
+                # Clean header - strip whitespace
+                if isinstance(header, str):
+                    header = header.strip()
+                headers.append(header)
+            
+            # Skip sheets with no meaningful headers
+            if not any(headers):
+                continue
             
             # Get data rows
             data_rows = []
@@ -32,18 +40,41 @@ def process_excel_file(file_content, filename):
                 if any(cell is not None for cell in row):  # Skip empty rows
                     row_dict = {}
                     for i, value in enumerate(row):
-                        if i < len(headers):
+                        if i < len(headers) and headers[i]:
                             # Convert datetime objects to strings
                             if hasattr(value, 'strftime'):
                                 value = value.strftime('%Y-%m-%d %H:%M:%S')
-                            row_dict[headers[i]] = value
-                    data_rows.append(row_dict)
+                            # Clean the header name for the key
+                            clean_header = headers[i].strip() if isinstance(headers[i], str) else headers[i]
+                            row_dict[clean_header] = value
+                    if row_dict:  # Only add non-empty rows
+                        data_rows.append(row_dict)
             
-            processed_data[sheet_name] = {
-                'headers': headers,
-                'data': data_rows,
-                'row_count': len(data_rows)
-            }
+            # Only add sheets that have data
+            if data_rows:
+                processed_data[sheet_name] = {
+                    'headers': headers,
+                    'data': data_rows,
+                    'row_count': len(data_rows)
+                }
+        
+        # If we have a sheet with actual data, prioritize it
+        # Look for sheets with meaningful data (more than 10 rows typically)
+        best_sheet = None
+        max_rows = 0
+        for sheet_name, sheet_data in processed_data.items():
+            if sheet_data['row_count'] > max_rows:
+                max_rows = sheet_data['row_count']
+                best_sheet = sheet_name
+        
+        # If we found a best sheet with significant data, use it as primary
+        if best_sheet and max_rows > 10:
+            # Reorder to put best sheet first
+            reordered = {best_sheet: processed_data[best_sheet]}
+            for k, v in processed_data.items():
+                if k != best_sheet:
+                    reordered[k] = v
+            processed_data = reordered
         
         return processed_data
         
