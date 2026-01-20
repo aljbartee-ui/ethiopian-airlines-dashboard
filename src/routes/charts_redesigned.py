@@ -502,6 +502,7 @@ def get_chart_data(chart_id):
             'data_mode': data_mode,
             'time_mode': time_mode if chart_id == 'by_report' else None,
             'labels': list(chart_data.keys()),
+            'data': values,
             'values': values,
             'statistics': {
                 'total': total,
