@@ -712,16 +712,12 @@
                 const response = await fetch('/api/auth/public-status');
                 const data = await response.json();
                 
-                if (!data.authenticated) {
-                    window.location.href = '/flight-analysis';
-                    return;
-                }
-                
-                currentState.isAdmin = data.admin_authenticated;
+                currentState.isAdmin = data.admin_authenticated || false;
                 updateUI();
                 loadData();
             } catch (error) {
-                window.location.href = '/flight-analysis';
+                // Still load data even if auth check fails
+                loadData();
             }
         }
 
@@ -821,7 +817,8 @@
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
             
-            let url = '/api/flight-load/data?';
+            // Load manifest data directly
+            let url = '/api/manifest/data?';
             if (flight !== 'all') url += `flight=${flight}&`;
             if (startDate) url += `start_date=${startDate}&`;
             if (endDate) url += `end_date=${endDate}&`;
@@ -830,10 +827,28 @@
                 const response = await fetch(url);
                 const data = await response.json();
                 
-                if (response.ok && data.records && data.records.length > 0) {
-                    updateStats(data);
-                    updateCharts(data);
-                    updateTable(data.records);
+                if (response.ok && data.data && data.data.length > 0) {
+                    // Transform manifest data for display
+                    const records = data.data.map(r => ({
+                        date: r.flight_date,
+                        flight: r.flight_number,
+                        capacity: r.total_capacity,
+                        forecast: r.forecast_passengers || 0,
+                        actual: r.total_passengers,
+                        load_factor: r.load_factor
+                    }));
+                    
+                    const transformedData = {
+                        records: records,
+                        avg_load_factor: data.average_load_factor,
+                        total_passengers: data.total_passengers,
+                        total_flights: data.record_count,
+                        forecast_accuracy: 0
+                    };
+                    
+                    updateStats(transformedData);
+                    updateCharts(transformedData);
+                    updateTable(records);
                 } else {
                     showNoData();
                 }
