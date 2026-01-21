@@ -328,6 +328,106 @@
 
         .btn-save-all:hover { background: var(--et-green-dark); }
 
+        /* Filter Section */
+        .filter-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 20px 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .filter-header h3 {
+            color: var(--white);
+            font-size: 1rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-header h3 i { color: var(--et-yellow); }
+
+        .filter-controls {
+            display: flex;
+            align-items: flex-end;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .filter-group input[type="date"] {
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--white);
+            font-size: 0.9rem;
+            min-width: 160px;
+        }
+
+        .filter-group input[type="date"]:focus {
+            outline: none;
+            border-color: var(--et-yellow);
+        }
+
+        .btn-apply-filter {
+            padding: 10px 20px;
+            background: var(--et-yellow);
+            border: none;
+            border-radius: 8px;
+            color: var(--gray-900);
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-apply-filter:hover { background: var(--et-yellow-dark); }
+
+        .btn-clear-filter {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--white);
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-clear-filter:hover { background: rgba(255, 255, 255, 0.2); }
+
+        .filter-info {
+            margin-top: 15px;
+            padding: 10px 15px;
+            background: rgba(255, 204, 0, 0.1);
+            border: 1px solid rgba(255, 204, 0, 0.3);
+            border-radius: 8px;
+            color: var(--et-yellow);
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         /* Stats Grid */
         .stats-grid {
             display: grid;
@@ -580,6 +680,32 @@
                         <i class="fas fa-save"></i> Save All Forecasts
                     </button>
                 </div>
+            </div>
+        </section>
+
+        <!-- Date Range Filter -->
+        <section class="filter-section">
+            <div class="filter-header">
+                <h3><i class="fas fa-filter"></i> Filter by Date Range</h3>
+            </div>
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <label for="startDate">Start Date</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div class="filter-group">
+                    <label for="endDate">End Date</label>
+                    <input type="date" id="endDate">
+                </div>
+                <button class="btn-apply-filter" onclick="applyDateFilter()">
+                    <i class="fas fa-search"></i> Apply Filter
+                </button>
+                <button class="btn-clear-filter" onclick="clearDateFilter()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+            <div class="filter-info" id="filterInfo" style="display: none;">
+                <i class="fas fa-info-circle"></i> <span id="filterInfoText"></span>
             </div>
         </section>
 
@@ -941,12 +1067,16 @@
                 const result = await response.json();
 
                 if (result.success && result.data && result.data.length > 0) {
-                    processAndDisplayData(result.data);
+                    // Store all data for filtering
+                    allManifestData = result.data;
+                    filterAndDisplayData();
                 } else {
+                    allManifestData = [];
                     showNoData();
                 }
             } catch (error) {
                 console.error('Error loading data:', error);
+                allManifestData = [];
                 showNoData();
             }
         }
@@ -1210,6 +1340,83 @@
         async function handleLogout() {
             await fetch('/api/auth/logout', { method: 'POST' });
             window.location.href = '/';
+        }
+
+        // Date filter variables
+        let currentStartDate = null;
+        let currentEndDate = null;
+        let allManifestData = [];
+
+        function applyDateFilter() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (!startDate && !endDate) {
+                alert('Please select at least one date');
+                return;
+            }
+
+            currentStartDate = startDate || null;
+            currentEndDate = endDate || null;
+
+            // Filter the data
+            filterAndDisplayData();
+
+            // Show filter info
+            const filterInfo = document.getElementById('filterInfo');
+            const filterInfoText = document.getElementById('filterInfoText');
+            filterInfo.style.display = 'flex';
+            
+            if (startDate && endDate) {
+                filterInfoText.textContent = `Showing data from ${formatDate(startDate)} to ${formatDate(endDate)}`;
+            } else if (startDate) {
+                filterInfoText.textContent = `Showing data from ${formatDate(startDate)} onwards`;
+            } else {
+                filterInfoText.textContent = `Showing data up to ${formatDate(endDate)}`;
+            }
+        }
+
+        function clearDateFilter() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            currentStartDate = null;
+            currentEndDate = null;
+            document.getElementById('filterInfo').style.display = 'none';
+            filterAndDisplayData();
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function filterAndDisplayData() {
+            if (allManifestData.length === 0) {
+                showNoData();
+                return;
+            }
+
+            let filteredData = allManifestData;
+
+            if (currentStartDate || currentEndDate) {
+                filteredData = allManifestData.filter(manifest => {
+                    const manifestDate = manifest.flight_date;
+                    if (!manifestDate) return false;
+                    
+                    // Parse the manifest date (format: YYYY-MM-DD)
+                    const mDate = manifestDate.split('T')[0];
+                    
+                    if (currentStartDate && mDate < currentStartDate) return false;
+                    if (currentEndDate && mDate > currentEndDate) return false;
+                    return true;
+                });
+            }
+
+            if (filteredData.length > 0) {
+                processAndDisplayData(filteredData);
+            } else {
+                showNoData();
+            }
         }
 
         // Initialize
