@@ -31,7 +31,7 @@
             padding: 20px;
         }
 
-        .container { max-width: 1600px; margin: 0 auto; }
+        .container { max-width: 1800px; margin: 0 auto; }
 
         /* Header */
         .header {
@@ -164,7 +164,7 @@
             flex-direction: column;
             gap: 5px;
             flex: 1;
-            min-width: 150px;
+            min-width: 120px;
         }
 
         .forecast-input-group label {
@@ -172,7 +172,8 @@
             font-size: 0.8rem;
         }
 
-        .forecast-input-group input {
+        .forecast-input-group input,
+        .forecast-input-group select {
             padding: 10px;
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 8px;
@@ -181,7 +182,10 @@
             font-size: 0.9rem;
         }
 
-        .forecast-input-group input:focus { outline: none; border-color: var(--et-green); }
+        .forecast-input-group input:focus,
+        .forecast-input-group select:focus { outline: none; border-color: var(--et-green); }
+
+        .forecast-input-group select option { background: #2d4a2a; color: var(--white); }
 
         /* Airport Autocomplete */
         .airport-autocomplete {
@@ -327,7 +331,7 @@
         /* Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 20px;
             margin-bottom: 25px;
         }
@@ -336,26 +340,88 @@
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(20px);
             border-radius: 16px;
-            padding: 25px;
+            padding: 20px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
         }
 
-        .stat-card h4 { color: rgba(255, 255, 255, 0.7); font-size: 0.85rem; margin-bottom: 10px; }
-        .stat-card .value { font-size: 2rem; font-weight: 700; margin-bottom: 5px; }
-        .stat-card .sub { color: rgba(255, 255, 255, 0.5); font-size: 0.8rem; }
+        .stat-card h4 { color: rgba(255, 255, 255, 0.7); font-size: 0.8rem; margin-bottom: 8px; }
+        .stat-card .value { font-size: 1.8rem; font-weight: 700; margin-bottom: 5px; }
+        .stat-card .sub { color: rgba(255, 255, 255, 0.5); font-size: 0.75rem; }
 
         .stat-card.green .value { color: var(--et-green-light); }
         .stat-card.yellow .value { color: var(--et-yellow); }
         .stat-card.red .value { color: var(--et-red-light); }
 
+        /* Flight Section Headers */
+        .flight-section {
+            margin-bottom: 30px;
+        }
+
+        .flight-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border-left: 4px solid;
+        }
+
+        .flight-header.inbound { border-left-color: var(--et-green); }
+        .flight-header.outbound { border-left-color: var(--et-yellow); }
+
+        .flight-header .flight-icon {
+            font-size: 1.5rem;
+        }
+
+        .flight-header.inbound .flight-icon { color: var(--et-green); }
+        .flight-header.outbound .flight-icon { color: var(--et-yellow); }
+
+        .flight-header .flight-info h3 {
+            color: var(--white);
+            font-size: 1.2rem;
+            margin-bottom: 3px;
+        }
+
+        .flight-header .flight-info p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+        }
+
+        .flight-header .flight-stats {
+            margin-left: auto;
+            display: flex;
+            gap: 25px;
+        }
+
+        .flight-header .flight-stat {
+            text-align: center;
+        }
+
+        .flight-header .flight-stat .stat-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .flight-header.inbound .flight-stat .stat-value { color: var(--et-green-light); }
+        .flight-header.outbound .flight-stat .stat-value { color: var(--et-yellow); }
+
+        .flight-header .flight-stat .stat-label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.75rem;
+        }
+
         /* Charts Grid */
         .charts-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 25px;
             margin-bottom: 25px;
         }
+
+        @media (max-width: 1200px) { .charts-grid { grid-template-columns: 1fr; } }
 
         .chart-card {
             background: rgba(255, 255, 255, 0.05);
@@ -365,8 +431,26 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .chart-card h3 { color: var(--white); font-size: 1.1rem; margin-bottom: 20px; }
-        .chart-container { height: 300px; position: relative; }
+        .chart-card h3 { 
+            color: var(--white); 
+            font-size: 1rem; 
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-card h3 .badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .chart-card h3 .badge.inbound { background: var(--et-green); color: var(--white); }
+        .chart-card h3 .badge.outbound { background: var(--et-yellow); color: var(--gray-900); }
+
+        .chart-container { height: 280px; position: relative; }
 
         /* Routes Table */
         .routes-table-section {
@@ -375,9 +459,17 @@
             border-radius: 16px;
             padding: 25px;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 25px;
         }
 
-        .routes-table-section h3 { color: var(--white); font-size: 1.1rem; margin-bottom: 20px; }
+        .routes-table-section h3 { 
+            color: var(--white); 
+            font-size: 1.1rem; 
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
         .table-wrapper { overflow-x: auto; }
 
@@ -409,6 +501,17 @@
 
         .no-data i { font-size: 3rem; margin-bottom: 15px; color: var(--et-yellow); }
         .no-data h3 { margin-bottom: 10px; color: var(--white); }
+
+        .direction-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .direction-badge.inbound { background: var(--et-green); color: var(--white); }
+        .direction-badge.outbound { background: var(--et-yellow); color: var(--gray-900); }
     </style>
 </head>
 <body>
@@ -452,12 +555,19 @@
                             <label>Date</label>
                             <input type="date" id="forecastDate">
                         </div>
+                        <div class="forecast-input-group" style="max-width: 140px;">
+                            <label>Flight</label>
+                            <select id="forecastFlight">
+                                <option value="ET621">ET621 (Outbound)</option>
+                                <option value="ET620">ET620 (Inbound)</option>
+                            </select>
+                        </div>
                         <div class="airport-autocomplete">
                             <label>Airport (type code or name)</label>
                             <input type="text" id="airportSearch" placeholder="Type airport code or name..." autocomplete="off">
                             <div class="autocomplete-dropdown" id="airportDropdown"></div>
                         </div>
-                        <div class="forecast-input-group" style="max-width: 120px;">
+                        <div class="forecast-input-group" style="max-width: 100px;">
                             <label>Passengers</label>
                             <input type="number" id="forecastPassengers" placeholder="0" min="0">
                         </div>
@@ -473,12 +583,27 @@
             </div>
         </section>
 
-        <!-- Stats -->
+        <!-- Overall Stats -->
         <div class="stats-grid">
             <div class="stat-card green">
                 <h4>Total Passengers</h4>
                 <div class="value" id="totalPassengers">--</div>
-                <div class="sub">From manifests</div>
+                <div class="sub">All flights combined</div>
+            </div>
+            <div class="stat-card yellow">
+                <h4>ET621 Outbound</h4>
+                <div class="value" id="outboundPassengers">--</div>
+                <div class="sub">KWI → ADD</div>
+            </div>
+            <div class="stat-card green">
+                <h4>ET620 Inbound</h4>
+                <div class="value" id="inboundPassengers">--</div>
+                <div class="sub">ADD → KWI</div>
+            </div>
+            <div class="stat-card red">
+                <h4>Total Manifests</h4>
+                <div class="value" id="totalManifests">--</div>
+                <div class="sub">Uploaded files</div>
             </div>
             <div class="stat-card yellow">
                 <h4>Top Route</h4>
@@ -486,36 +611,85 @@
                 <div class="sub">Highest traffic</div>
             </div>
             <div class="stat-card green">
-                <h4>Total Manifests</h4>
-                <div class="value" id="totalManifests">--</div>
-                <div class="sub">Uploaded files</div>
-            </div>
-            <div class="stat-card red">
                 <h4>Active Routes</h4>
                 <div class="value" id="activeRoutes">--</div>
                 <div class="sub">With passengers</div>
             </div>
         </div>
 
-        <!-- Charts -->
-        <div class="charts-grid">
-            <div class="chart-card">
-                <h3>Passengers by Route</h3>
-                <div class="chart-container">
-                    <canvas id="routesChart"></canvas>
+        <!-- Outbound Section (ET621) -->
+        <section class="flight-section" id="outboundSection">
+            <div class="flight-header outbound">
+                <i class="fas fa-plane-departure flight-icon"></i>
+                <div class="flight-info">
+                    <h3>ET621 - Outbound Flight</h3>
+                    <p>Kuwait (KWI) → Addis Ababa (ADD) and beyond</p>
+                </div>
+                <div class="flight-stats">
+                    <div class="flight-stat">
+                        <div class="stat-value" id="et621Passengers">--</div>
+                        <div class="stat-label">Passengers</div>
+                    </div>
+                    <div class="flight-stat">
+                        <div class="stat-value" id="et621Routes">--</div>
+                        <div class="stat-label">Routes</div>
+                    </div>
                 </div>
             </div>
-            <div class="chart-card">
-                <h3>Forecast vs Actual by Route</h3>
-                <div class="chart-container">
-                    <canvas id="forecastChart"></canvas>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3><span class="badge outbound">ET621</span> Passengers by Destination</h3>
+                    <div class="chart-container">
+                        <canvas id="outboundRoutesChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3><span class="badge outbound">ET621</span> Top 10 Routes</h3>
+                    <div class="chart-container">
+                        <canvas id="outboundBarChart"></canvas>
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Routes Table -->
+        <!-- Inbound Section (ET620) -->
+        <section class="flight-section" id="inboundSection">
+            <div class="flight-header inbound">
+                <i class="fas fa-plane-arrival flight-icon"></i>
+                <div class="flight-info">
+                    <h3>ET620 - Inbound Flight</h3>
+                    <p>Addis Ababa (ADD) → Kuwait (KWI)</p>
+                </div>
+                <div class="flight-stats">
+                    <div class="flight-stat">
+                        <div class="stat-value" id="et620Passengers">--</div>
+                        <div class="stat-label">Passengers</div>
+                    </div>
+                    <div class="flight-stat">
+                        <div class="stat-value" id="et620Routes">--</div>
+                        <div class="stat-label">Routes</div>
+                    </div>
+                </div>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3><span class="badge inbound">ET620</span> Passengers by Origin</h3>
+                    <div class="chart-container">
+                        <canvas id="inboundRoutesChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3><span class="badge inbound">ET620</span> Top 10 Routes</h3>
+                    <div class="chart-container">
+                        <canvas id="inboundBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Combined Routes Table -->
         <section class="routes-table-section">
-            <h3>Route Details</h3>
+            <h3><i class="fas fa-table"></i> Route Details (All Flights)</h3>
             <div class="table-wrapper">
                 <table id="routesTable">
                     <thead>
@@ -523,13 +697,15 @@
                             <th>Route Code</th>
                             <th>Airport Name</th>
                             <th>City / Country</th>
-                            <th>Passengers</th>
+                            <th>ET621 (Out)</th>
+                            <th>ET620 (In)</th>
+                            <th>Total</th>
                             <th>% of Total</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
                         <tr>
-                            <td colspan="5" class="no-data">
+                            <td colspan="7" class="no-data">
                                 <i class="fas fa-route"></i>
                                 <h3>No Data Available</h3>
                                 <p>Upload manifest files to view route analysis</p>
@@ -545,13 +721,22 @@
         // Global variables
         let airportsData = {};
         let pendingForecasts = [];
-        let charts = { routes: null, forecast: null };
+        let charts = {
+            outboundRoutes: null,
+            outboundBar: null,
+            inboundRoutes: null,
+            inboundBar: null
+        };
         let selectedAirport = null;
 
-        const ROUTE_COLORS = [
-            '#4D8C3C', '#FFCC00', '#CC0000', '#5FA04A', '#E6B800', 
-            '#990000', '#3A6B2D', '#FFD633', '#E60000', '#2d4a2a',
-            '#8BC34A', '#FFC107', '#F44336', '#4CAF50', '#FF9800'
+        const OUTBOUND_COLORS = [
+            '#FFCC00', '#FFD633', '#E6B800', '#FFE066', '#CCAA00',
+            '#FFC107', '#FFB300', '#FFA000', '#FF8F00', '#FF6F00'
+        ];
+
+        const INBOUND_COLORS = [
+            '#4D8C3C', '#5FA04A', '#3A6B2D', '#6BBF59', '#2E5422',
+            '#8BC34A', '#7CB342', '#689F38', '#558B2F', '#33691E'
         ];
 
         // Load airports data
@@ -608,7 +793,6 @@
                 dropdown.classList.add('show');
             });
 
-            // Close dropdown when clicking outside
             document.addEventListener('click', function(e) {
                 if (!e.target.closest('.airport-autocomplete')) {
                     dropdown.classList.remove('show');
@@ -624,41 +808,33 @@
 
         function addForecastEntry() {
             const date = document.getElementById('forecastDate').value;
+            const flight = document.getElementById('forecastFlight').value;
             const passengers = parseInt(document.getElementById('forecastPassengers').value) || 0;
 
-            if (!date) {
-                alert('Please select a date');
-                return;
-            }
+            if (!date) { alert('Please select a date'); return; }
+            if (!selectedAirport) { alert('Please select an airport'); return; }
+            if (passengers <= 0) { alert('Please enter a valid passenger count'); return; }
 
-            if (!selectedAirport) {
-                alert('Please select an airport');
-                return;
-            }
-
-            if (passengers <= 0) {
-                alert('Please enter a valid passenger count');
-                return;
-            }
-
-            // Check if already exists
-            const exists = pendingForecasts.find(f => f.airport_code === selectedAirport.code && f.date === date);
+            const exists = pendingForecasts.find(f => 
+                f.airport_code === selectedAirport.code && f.date === date && f.flight === flight
+            );
+            
             if (exists) {
                 exists.passengers = passengers;
             } else {
                 pendingForecasts.push({
                     date: date,
+                    flight: flight,
                     airport_code: selectedAirport.code,
                     airport_name: selectedAirport.name,
                     city: selectedAirport.city,
                     country: selectedAirport.country,
-                    passengers: passengers
+                    passengers: passengers,
+                    direction: flight === 'ET621' ? 'outbound' : 'inbound'
                 });
             }
 
             renderForecastList();
-            
-            // Clear inputs
             document.getElementById('airportSearch').value = '';
             document.getElementById('forecastPassengers').value = '';
             selectedAirport = null;
@@ -678,6 +854,7 @@
             list.innerHTML = pendingForecasts.map((f, i) => `
                 <div class="forecast-item">
                     <div class="info">
+                        <span class="direction-badge ${f.direction}">${f.flight}</span>
                         <span class="code">${f.airport_code}</span>
                         <span class="name">${f.airport_name} (${f.date})</span>
                     </div>
@@ -740,9 +917,10 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
+                    const direction = data.flight_number.includes('621') ? 'Outbound' : 'Inbound';
                     statusEl.className = 'upload-status success';
                     statusEl.innerHTML = `<i class="fas fa-check-circle"></i> ${data.message}<br>
-                        <strong>Flight:</strong> ${data.flight_number} | 
+                        <strong>Flight:</strong> ${data.flight_number} (${direction}) | 
                         <strong>Date:</strong> ${data.flight_date} | 
                         <strong>Passengers:</strong> ${data.total_passengers}`;
                     loadData();
@@ -754,7 +932,6 @@
                 statusEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message}`;
             }
 
-            // Reset file input
             event.target.value = '';
         }
 
@@ -775,112 +952,201 @@
         }
 
         function processAndDisplayData(manifests) {
-            // Aggregate route breakdown from all manifests
-            const routeTotals = {};
-            let totalPassengers = 0;
+            // Separate by flight direction
+            const outboundRoutes = {};  // ET621
+            const inboundRoutes = {};   // ET620
+            let outboundTotal = 0;
+            let inboundTotal = 0;
 
             manifests.forEach(manifest => {
+                const isOutbound = manifest.flight_number && manifest.flight_number.includes('621');
+                const routes = isOutbound ? outboundRoutes : inboundRoutes;
+                
                 if (manifest.route_breakdown) {
                     for (const [route, count] of Object.entries(manifest.route_breakdown)) {
-                        if (!routeTotals[route]) routeTotals[route] = 0;
-                        routeTotals[route] += count;
-                        totalPassengers += count;
+                        if (!routes[route]) routes[route] = 0;
+                        routes[route] += count;
+                        
+                        if (isOutbound) outboundTotal += count;
+                        else inboundTotal += count;
                     }
                 }
             });
 
-            // Sort routes by passenger count
-            const sortedRoutes = Object.entries(routeTotals)
-                .sort((a, b) => b[1] - a[1]);
+            const totalPassengers = outboundTotal + inboundTotal;
+            const allRoutes = new Set([...Object.keys(outboundRoutes), ...Object.keys(inboundRoutes)]);
 
             // Update stats
             document.getElementById('totalPassengers').textContent = totalPassengers.toLocaleString();
-            document.getElementById('topRoute').textContent = sortedRoutes.length > 0 ? sortedRoutes[0][0] : '--';
+            document.getElementById('outboundPassengers').textContent = outboundTotal.toLocaleString();
+            document.getElementById('inboundPassengers').textContent = inboundTotal.toLocaleString();
             document.getElementById('totalManifests').textContent = manifests.length;
-            document.getElementById('activeRoutes').textContent = sortedRoutes.length;
+            document.getElementById('activeRoutes').textContent = allRoutes.size;
+
+            // Find top route
+            const combinedRoutes = {};
+            allRoutes.forEach(route => {
+                combinedRoutes[route] = (outboundRoutes[route] || 0) + (inboundRoutes[route] || 0);
+            });
+            const topRoute = Object.entries(combinedRoutes).sort((a, b) => b[1] - a[1])[0];
+            document.getElementById('topRoute').textContent = topRoute ? topRoute[0] : '--';
+
+            // Update flight section stats
+            document.getElementById('et621Passengers').textContent = outboundTotal.toLocaleString();
+            document.getElementById('et621Routes').textContent = Object.keys(outboundRoutes).length;
+            document.getElementById('et620Passengers').textContent = inboundTotal.toLocaleString();
+            document.getElementById('et620Routes').textContent = Object.keys(inboundRoutes).length;
 
             // Update charts
-            updateCharts(sortedRoutes, totalPassengers);
+            updateOutboundCharts(outboundRoutes);
+            updateInboundCharts(inboundRoutes);
 
             // Update table
-            updateTable(sortedRoutes, totalPassengers);
+            updateTable(outboundRoutes, inboundRoutes, totalPassengers);
         }
 
-        function updateCharts(sortedRoutes, totalPassengers) {
-            const top10 = sortedRoutes.slice(0, 10);
+        function updateOutboundCharts(routes) {
+            const sorted = Object.entries(routes).sort((a, b) => b[1] - a[1]);
+            const top10 = sorted.slice(0, 10);
             const labels = top10.map(r => r[0]);
             const data = top10.map(r => r[1]);
 
-            // Routes Pie Chart
-            const routesCtx = document.getElementById('routesChart').getContext('2d');
-            if (charts.routes) charts.routes.destroy();
+            // Doughnut Chart
+            const ctx1 = document.getElementById('outboundRoutesChart').getContext('2d');
+            if (charts.outboundRoutes) charts.outboundRoutes.destroy();
 
-            charts.routes = new Chart(routesCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: ROUTE_COLORS,
-                        borderWidth: 2,
-                        borderColor: 'rgba(0,0,0,0.3)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: { color: 'rgba(255,255,255,0.8)' }
+            if (data.length > 0) {
+                charts.outboundRoutes = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: OUTBOUND_COLORS,
+                            borderWidth: 2,
+                            borderColor: 'rgba(0,0,0,0.3)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { color: 'rgba(255,255,255,0.8)', font: { size: 11 } }
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
 
             // Bar Chart
-            const forecastCtx = document.getElementById('forecastChart').getContext('2d');
-            if (charts.forecast) charts.forecast.destroy();
+            const ctx2 = document.getElementById('outboundBarChart').getContext('2d');
+            if (charts.outboundBar) charts.outboundBar.destroy();
 
-            charts.forecast = new Chart(forecastCtx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Passengers',
-                        data: data,
-                        backgroundColor: '#FFCC00',
-                        borderColor: '#E6B800',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { color: 'rgba(255,255,255,0.8)' } }
+            if (data.length > 0) {
+                charts.outboundBar = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Passengers',
+                            data: data,
+                            backgroundColor: '#FFCC00',
+                            borderColor: '#E6B800',
+                            borderWidth: 1
+                        }]
                     },
-                    scales: {
-                        x: {
-                            ticks: { color: 'rgba(255,255,255,0.7)' },
-                            grid: { color: 'rgba(255,255,255,0.1)' }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
                         },
-                        y: {
-                            ticks: { color: 'rgba(255,255,255,0.7)' },
-                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        scales: {
+                            x: { ticks: { color: 'rgba(255,255,255,0.7)' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                            y: { ticks: { color: 'rgba(255,255,255,0.7)' }, grid: { color: 'rgba(255,255,255,0.1)' } }
                         }
                     }
-                }
-            });
+                });
+            }
         }
 
-        function updateTable(sortedRoutes, totalPassengers) {
-            const tbody = document.getElementById('tableBody');
+        function updateInboundCharts(routes) {
+            const sorted = Object.entries(routes).sort((a, b) => b[1] - a[1]);
+            const top10 = sorted.slice(0, 10);
+            const labels = top10.map(r => r[0]);
+            const data = top10.map(r => r[1]);
 
-            if (sortedRoutes.length === 0) {
+            // Doughnut Chart
+            const ctx1 = document.getElementById('inboundRoutesChart').getContext('2d');
+            if (charts.inboundRoutes) charts.inboundRoutes.destroy();
+
+            if (data.length > 0) {
+                charts.inboundRoutes = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: INBOUND_COLORS,
+                            borderWidth: 2,
+                            borderColor: 'rgba(0,0,0,0.3)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { color: 'rgba(255,255,255,0.8)', font: { size: 11 } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Bar Chart
+            const ctx2 = document.getElementById('inboundBarChart').getContext('2d');
+            if (charts.inboundBar) charts.inboundBar.destroy();
+
+            if (data.length > 0) {
+                charts.inboundBar = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Passengers',
+                            data: data,
+                            backgroundColor: '#4D8C3C',
+                            borderColor: '#3A6B2D',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: { ticks: { color: 'rgba(255,255,255,0.7)' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                            y: { ticks: { color: 'rgba(255,255,255,0.7)' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateTable(outboundRoutes, inboundRoutes, totalPassengers) {
+            const tbody = document.getElementById('tableBody');
+            const allRoutes = new Set([...Object.keys(outboundRoutes), ...Object.keys(inboundRoutes)]);
+
+            if (allRoutes.size === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="no-data">
+                        <td colspan="7" class="no-data">
                             <i class="fas fa-route"></i>
                             <h3>No Data Available</h3>
                             <p>Upload manifest files to view route analysis</p>
@@ -890,15 +1156,26 @@
                 return;
             }
 
-            tbody.innerHTML = sortedRoutes.map(([code, count]) => {
-                const airport = airportsData[code] || {};
-                const percentage = totalPassengers > 0 ? ((count / totalPassengers) * 100).toFixed(1) : 0;
+            // Combine and sort by total
+            const combined = [];
+            allRoutes.forEach(code => {
+                const outbound = outboundRoutes[code] || 0;
+                const inbound = inboundRoutes[code] || 0;
+                combined.push({ code, outbound, inbound, total: outbound + inbound });
+            });
+            combined.sort((a, b) => b.total - a.total);
+
+            tbody.innerHTML = combined.map(route => {
+                const airport = airportsData[route.code] || {};
+                const percentage = totalPassengers > 0 ? ((route.total / totalPassengers) * 100).toFixed(1) : 0;
                 return `
                     <tr>
-                        <td><strong style="color: var(--et-yellow);">${code}</strong></td>
+                        <td><strong style="color: var(--et-yellow);">${route.code}</strong></td>
                         <td>${airport.name || 'Unknown'}</td>
                         <td>${airport.city || ''}, ${airport.country || ''}</td>
-                        <td><strong>${count}</strong></td>
+                        <td>${route.outbound > 0 ? `<span style="color: var(--et-yellow);">${route.outbound}</span>` : '-'}</td>
+                        <td>${route.inbound > 0 ? `<span style="color: var(--et-green-light);">${route.inbound}</span>` : '-'}</td>
+                        <td><strong>${route.total}</strong></td>
                         <td>${percentage}%</td>
                     </tr>
                 `;
@@ -907,13 +1184,19 @@
 
         function showNoData() {
             document.getElementById('totalPassengers').textContent = '--';
-            document.getElementById('topRoute').textContent = '--';
+            document.getElementById('outboundPassengers').textContent = '--';
+            document.getElementById('inboundPassengers').textContent = '--';
             document.getElementById('totalManifests').textContent = '0';
+            document.getElementById('topRoute').textContent = '--';
             document.getElementById('activeRoutes').textContent = '--';
+            document.getElementById('et621Passengers').textContent = '--';
+            document.getElementById('et621Routes').textContent = '--';
+            document.getElementById('et620Passengers').textContent = '--';
+            document.getElementById('et620Routes').textContent = '--';
 
             document.getElementById('tableBody').innerHTML = `
                 <tr>
-                    <td colspan="5" class="no-data">
+                    <td colspan="7" class="no-data">
                         <i class="fas fa-route"></i>
                         <h3>No Data Available</h3>
                         <p>Upload manifest files to view route analysis</p>
@@ -921,9 +1204,7 @@
                 </tr>
             `;
 
-            // Clear charts
-            if (charts.routes) charts.routes.destroy();
-            if (charts.forecast) charts.forecast.destroy();
+            Object.values(charts).forEach(chart => { if (chart) chart.destroy(); });
         }
 
         async function handleLogout() {
@@ -933,9 +1214,7 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
-            // Set default date to today
             document.getElementById('forecastDate').valueAsDate = new Date();
-            
             await loadAirports();
             setupAutocomplete();
             renderForecastList();
