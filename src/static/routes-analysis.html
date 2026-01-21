@@ -875,7 +875,7 @@
             if (pendingForecasts.length === 0) return;
 
             try {
-                const response = await fetch('/api/manifest/forecast/save', {
+                const response = await fetch('/api/forecast/save', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ forecasts: pendingForecasts })
