@@ -199,13 +199,14 @@ def process_chart_data(data, chart_type, data_mode='revenue', time_mode='daily',
         if not sheet_data:
             return {}
         
-        # Define possible column names for each field
-        date_columns = ['DATE', 'Date', 'date']
+        # Define possible column names for each field (based on actual Excel structure)
+        # Actual columns: Tickets, DATE, Ticket Number, Amount, Issuing agent, FOP, Time, INCOME, Day, TIME 24HRS
+        date_columns = ['DATE', 'Date', 'date', 'Issue Date']
         income_columns = ['INCOME', 'Income', 'income', 'Amount', 'amount', 'Revenue', 'revenue']
-        agent_columns = ['Issuing agent', 'Issuing Agent', 'Agent', 'agent', 'AGENT']
+        agent_columns = ['Issuing agent', 'Issuing Agent', 'Agent', 'agent', 'AGENT', 'Agent Name']
         time_columns = ['Time', 'TIME', 'time']
-        time_24_columns = ['TIME 24HRS', 'Time 24hrs', 'TIME24HRS', 'time_24hrs']
-        day_columns = ['Day', 'DAY', 'day', 'DayOfWeek']
+        time_24_columns = ['TIME 24HRS', 'Time 24hrs', 'TIME24HRS', 'time_24hrs', 'TIME24', 'Time24']
+        day_columns = ['Day', 'DAY', 'day', 'DayOfWeek', 'Weekday']
         
         # Filter by date range if provided
         filtered_data = sheet_data

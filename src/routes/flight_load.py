@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 from src.models.user import db
 from src.models.flight_load import FlightLoadRecord
-import openpyxl
+import pandas as pd
 from io import BytesIO
 from datetime import datetime
 from collections import defaultdict
@@ -10,12 +10,11 @@ flight_load_bp = Blueprint('flight_load', __name__)
 
 def safe_int(value):
     """Safely convert value to int, handling non-numeric values"""
-    if value is None or value == '':
+    if value is None or value == '' or pd.isna(value):
         return 0
     if isinstance(value, (int, float)):
         return int(value)
     if isinstance(value, str):
-        # Handle special values like 'X', 'N/A', etc.
         if value.strip().upper() in ['X', 'N/A', 'NA', '-', '']:
             return 0
         try:
@@ -26,12 +25,11 @@ def safe_int(value):
 
 def safe_float(value):
     """Safely convert value to float, handling non-numeric values"""
-    if value is None or value == '':
+    if value is None or value == '' or pd.isna(value):
         return 0.0
     if isinstance(value, (int, float)):
         return float(value)
     if isinstance(value, str):
-        # Handle special values like 'X', 'N/A', etc.
         if value.strip().upper() in ['X', 'N/A', 'NA', '-', '']:
             return 0.0
         try:
@@ -40,72 +38,110 @@ def safe_float(value):
             return 0.0
     return 0.0
 
-def process_flight_load_excel(file_content, filename):
-    """Process Flight Load Excel file and extract LF 620-621 data"""
-    try:
-        # Load workbook with data_only=True to read formula values
-        workbook = openpyxl.load_workbook(BytesIO(file_content), data_only=True)
+def parse_date(value):
+    """Parse date from various formats"""
+    if value is None or pd.isna(value):
+        return None
+    
+    if isinstance(value, datetime):
+        return value.strftime('%Y-%m-%d')
+    
+    if isinstance(value, pd.Timestamp):
+        return value.strftime('%Y-%m-%d')
+    
+    if isinstance(value, str):
+        value = value.strip()
+        if not value or value in ['', ' ', 'NaT']:
+            return None
         
-        # Get the first sheet (should be LF 620-621)
-        if not workbook.sheetnames:
+        # Try various date formats
+        formats = ['%Y-%m-%d', '%Y-%m-%d %H:%M:%S', '%d/%m/%Y', '%m/%d/%Y', '%d-%m-%Y']
+        for fmt in formats:
+            try:
+                return datetime.strptime(value.split(' ')[0], fmt).strftime('%Y-%m-%d')
+            except:
+                continue
+    
+    return None
+
+def process_flight_load_excel(file_content, filename):
+    """Process Flight Load Excel file using pandas"""
+    try:
+        # Read Excel file with pandas
+        xlsx = pd.ExcelFile(BytesIO(file_content))
+        
+        if not xlsx.sheet_names:
             raise ValueError("No sheets found in Excel file")
         
         # Use first sheet
-        sheet = workbook[workbook.sheetnames[0]]
-        print(f"Processing sheet: {workbook.sheetnames[0]}")
+        sheet_name = xlsx.sheet_names[0]
+        df = pd.read_excel(xlsx, sheet_name=sheet_name)
+        
+        print(f"Processing sheet: {sheet_name}")
+        print(f"Columns: {list(df.columns)}")
+        print(f"Total rows: {len(df)}")
         
         processed_data = {
-            'inbound': [],  # Flight 620: ADD to KWI
-            'outbound': []  # Flight 621: KWI to ADD
+            'inbound': [],   # Flight 620: ADD to KWI
+            'outbound': []   # Flight 621: KWI to ADD
         }
         
-        # Process inbound flights (columns A to L)
-        for row in sheet.iter_rows(min_row=2, values_only=True):
-            if row[0]:  # If flight number exists
-                inbound_record = {
-                    'flight_no': str(row[0]),
-                    'travel_date': row[1].strftime('%Y-%m-%d') if isinstance(row[1], datetime) else str(row[1]),
-                    'day': str(row[2]) if row[2] else '',
-                    'c_cap': safe_int(row[3]),  # Business capacity
-                    'y_cap': safe_int(row[4]),  # Economy capacity
-                    'tot_cap': safe_int(row[5]),  # Total capacity
-                    'pax_c': safe_int(row[6]),  # Business passengers
-                    'pax_y': safe_int(row[7]),  # Economy passengers
-                    'pax': safe_int(row[8]),  # Total passengers
-                    'lf_c': safe_float(row[9]),  # Business load factor
-                    'lf_y': safe_float(row[10]),  # Economy load factor
-                    'lf': safe_float(row[11])  # Total load factor
-                }
-                processed_data['inbound'].append(inbound_record)
+        # Process each row
+        for idx, row in df.iterrows():
+            # Process inbound flight (ET620) - columns 0-11
+            if pd.notna(row.iloc[0]) and pd.notna(row.iloc[1]):
+                travel_date = parse_date(row.iloc[1])
+                if travel_date:
+                    inbound_record = {
+                        'flight_no': str(int(row.iloc[0])) if isinstance(row.iloc[0], (int, float)) else str(row.iloc[0]),
+                        'travel_date': travel_date,
+                        'day': str(row.iloc[2]) if pd.notna(row.iloc[2]) else '',
+                        'c_cap': safe_int(row.iloc[3]),
+                        'y_cap': safe_int(row.iloc[4]),
+                        'tot_cap': safe_int(row.iloc[5]),
+                        'pax_c': safe_int(row.iloc[6]),
+                        'pax_y': safe_int(row.iloc[7]),
+                        'pax': safe_int(row.iloc[8]),
+                        'lf_c': safe_float(row.iloc[9]) * 100 if safe_float(row.iloc[9]) <= 1 else safe_float(row.iloc[9]),
+                        'lf_y': safe_float(row.iloc[10]) * 100 if safe_float(row.iloc[10]) <= 1 else safe_float(row.iloc[10]),
+                        'lf': safe_float(row.iloc[11]) * 100 if safe_float(row.iloc[11]) <= 1 else safe_float(row.iloc[11])
+                    }
+                    processed_data['inbound'].append(inbound_record)
+            
+            # Process outbound flight (ET621) - columns 14-25
+            if len(row) > 14 and pd.notna(row.iloc[14]) and pd.notna(row.iloc[15]):
+                travel_date = parse_date(row.iloc[15])
+                if travel_date:
+                    outbound_record = {
+                        'flight_no': str(int(row.iloc[14])) if isinstance(row.iloc[14], (int, float)) else str(row.iloc[14]),
+                        'travel_date': travel_date,
+                        'day': str(row.iloc[16]) if pd.notna(row.iloc[16]) else '',
+                        'c_cap': safe_int(row.iloc[17]),
+                        'y_cap': safe_int(row.iloc[18]),
+                        'tot_cap': safe_int(row.iloc[19]),
+                        'pax_c': safe_int(row.iloc[20]),
+                        'pax_y': safe_int(row.iloc[21]),
+                        'pax': safe_int(row.iloc[22]),
+                        'lf_c': safe_float(row.iloc[23]) * 100 if safe_float(row.iloc[23]) <= 1 else safe_float(row.iloc[23]),
+                        'lf_y': safe_float(row.iloc[24]) * 100 if safe_float(row.iloc[24]) <= 1 else safe_float(row.iloc[24]),
+                        'lf': safe_float(row.iloc[25]) * 100 if safe_float(row.iloc[25]) <= 1 else safe_float(row.iloc[25])
+                    }
+                    processed_data['outbound'].append(outbound_record)
         
-        # Process outbound flights (columns O to AA, indices 14 to 26)
-        for row in sheet.iter_rows(min_row=2, values_only=True):
-            if len(row) > 14 and row[14]:  # If outbound flight number exists
-                outbound_record = {
-                    'flight_no': str(row[14]),
-                    'travel_date': row[15].strftime('%Y-%m-%d') if isinstance(row[15], datetime) else str(row[15]),
-                    'day': str(row[16]) if row[16] else '',
-                    'c_cap': safe_int(row[17]),
-                    'y_cap': safe_int(row[18]),
-                    'tot_cap': safe_int(row[19]),
-                    'pax_c': safe_int(row[20]),
-                    'pax_y': safe_int(row[21]),
-                    'pax': safe_int(row[22]),
-                    'lf_c': safe_float(row[23]),
-                    'lf_y': safe_float(row[24]),
-                    'lf': safe_float(row[25])
-                }
-                processed_data['outbound'].append(outbound_record)
+        print(f"Processed {len(processed_data['inbound'])} inbound records")
+        print(f"Processed {len(processed_data['outbound'])} outbound records")
         
         return processed_data
         
     except Exception as e:
         print(f"Error processing flight load Excel file: {e}")
+        import traceback
+        traceback.print_exc()
         raise e
 
 @flight_load_bp.route('/upload', methods=['POST'])
 def upload_flight_load():
-    """Handle Load Factor Excel file upload (admin only) - Forecast Data"""
+    """Handle Load Factor Excel file upload - Forecast Data"""
     
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
@@ -125,32 +161,31 @@ def upload_flight_load():
         processed_data = process_flight_load_excel(file_content, file.filename)
         
         if not processed_data['inbound'] and not processed_data['outbound']:
-            return jsonify({'error': 'No flight load data found in Excel file'}), 400
+            return jsonify({'error': 'No valid flight load data found in Excel file'}), 400
         
         all_records = processed_data['inbound'] + processed_data['outbound']
+        records_saved = 0
+        records_updated = 0
         
-        # Transaction to ensure atomicity
-        with db.session.begin_nested():
-            for record in all_records:
+        for record in all_records:
+            try:
                 travel_date = datetime.strptime(record['travel_date'], '%Y-%m-%d').date()
                 flight_no = record['flight_no']
                 
-                # Check if an actual manifest record exists for this date/flight
+                # Check if record exists
                 existing_record = FlightLoadRecord.query.filter_by(
                     travel_date=travel_date,
                     flight_no=flight_no
                 ).first()
                 
                 if existing_record:
-                    # If an actual manifest exists, DO NOT override it with forecast data
-                    if existing_record.data_source == 'manifest':
-                        continue
-                    
-                    # If it's an existing forecast, update it
-                    existing_record.update_from_dict(record)
-                    existing_record.data_source = 'forecast'
+                    # Update existing record (unless it's from manifest)
+                    if existing_record.data_source != 'manifest':
+                        existing_record.update_from_dict(record)
+                        existing_record.data_source = 'forecast'
+                        records_updated += 1
                 else:
-                    # Create a new forecast record
+                    # Create new record
                     new_record = FlightLoadRecord(
                         travel_date=travel_date,
                         flight_no=flight_no,
@@ -158,34 +193,41 @@ def upload_flight_load():
                     )
                     new_record.update_from_dict(record)
                     db.session.add(new_record)
+                    records_saved += 1
+            except Exception as e:
+                print(f"Error saving record: {e}")
+                continue
         
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': 'Load Factor (Forecast) data uploaded and merged successfully',
-            'total_records_processed': len(all_records)
+            'message': f'Load Factor data uploaded successfully',
+            'records_saved': records_saved,
+            'records_updated': records_updated,
+            'total_inbound': len(processed_data['inbound']),
+            'total_outbound': len(processed_data['outbound'])
         })
         
     except Exception as e:
         db.session.rollback()
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Failed to process file: {str(e)}'}), 500
+
+@flight_load_bp.route('/upload-excel', methods=['POST'])
+def upload_excel():
+    """Alias for upload endpoint"""
+    return upload_flight_load()
 
 @flight_load_bp.route('/data')
 def get_flight_load_data():
     """Get flight load data with optional filters"""
-    # Check authentication
-    is_admin = session.get('admin_logged_in', False)
-    is_public = session.get('public_authenticated', False)
-    
-    if not is_admin and not is_public:
-        return jsonify({'error': 'Authentication required'}), 401
-    
     try:
         # Get filter parameters
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
-        flight_type = request.args.get('flight_type', 'both')  # inbound, outbound, or both
+        flight = request.args.get('flight', 'all')
         
         query = FlightLoadRecord.query
         
@@ -196,126 +238,79 @@ def get_flight_load_data():
         if end_date_str:
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
             query = query.filter(FlightLoadRecord.travel_date <= end_date)
+        
+        if flight and flight != 'all':
+            # Handle ET620/ET621 format
+            flight_no = flight.replace('ET', '')
+            query = query.filter(FlightLoadRecord.flight_no == flight_no)
             
-        all_records = query.order_by(FlightLoadRecord.travel_date).all()
+        all_records = query.order_by(FlightLoadRecord.travel_date.desc()).all()
         
-        inbound_records = []
-        outbound_records = []
-        
+        records = []
         for record in all_records:
-            record_dict = record.to_dict()
-            # Assuming flight_no '620' is inbound (ADD to KWI) and '621' is outbound (KWI to ADD)
-            # This assumption is based on the process_flight_load_excel function logic
-            if record.flight_no == '620':
-                inbound_records.append(record_dict)
-            elif record.flight_no == '621':
-                outbound_records.append(record_dict)
-                
-        filtered_data = {
-            'inbound': inbound_records,
-            'outbound': outbound_records
-        }
+            records.append({
+                'date': record.travel_date.strftime('%Y-%m-%d'),
+                'flight': f"ET{record.flight_no}",
+                'capacity': record.tot_cap,
+                'forecast': record.pax if record.data_source == 'forecast' else 0,
+                'actual': record.pax if record.data_source == 'manifest' else 0,
+                'load_factor': record.lf,
+                'data_source': record.data_source
+            })
         
-        # Apply flight type filter
-        if flight_type == 'inbound':
-            filtered_data['outbound'] = []
-        elif flight_type == 'outbound':
-            filtered_data['inbound'] = []
-        
-        if not filtered_data['inbound'] and not filtered_data['outbound']:
-            return jsonify({'error': 'No flight load data available for the selected range'}), 404
+        # Calculate stats
+        total_passengers = sum(r['actual'] or r['forecast'] for r in records)
+        avg_load_factor = sum(r['load_factor'] for r in records) / len(records) if records else 0
         
         return jsonify({
             'success': True,
-            'data': filtered_data
+            'records': records,
+            'record_count': len(records),
+            'total_passengers': total_passengers,
+            'avg_load_factor': avg_load_factor
         })
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @flight_load_bp.route('/summary')
 def get_flight_load_summary():
     """Get summary statistics for flight load data"""
-    # Check authentication
-    is_admin = session.get('admin_logged_in', False)
-    is_public = session.get('public_authenticated', False)
-    
-    if not is_admin and not is_public:
-        return jsonify({'error': 'Authentication required'}), 401
-    
     try:
-        # Get filter parameters
-        start_date_str = request.args.get('start_date')
-        end_date_str = request.args.get('end_date')
+        all_records = FlightLoadRecord.query.all()
         
-        query = FlightLoadRecord.query
+        inbound = [r for r in all_records if r.flight_no == '620']
+        outbound = [r for r in all_records if r.flight_no == '621']
         
-        if start_date_str:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            query = query.filter(FlightLoadRecord.travel_date >= start_date)
-        
-        if end_date_str:
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-            query = query.filter(FlightLoadRecord.travel_date <= end_date)
-            
-        all_records = query.all()
-        
-        inbound = [r.to_dict() for r in all_records if r.flight_no == '620']
-        outbound = [r.to_dict() for r in all_records if r.flight_no == '621']
-        
-        # Calculate summary statistics
         def calc_stats(records):
             if not records:
                 return {
                     'avg_lf': 0.0,
-                    'avg_lf_c': 0.0,
-                    'avg_lf_y': 0.0,
                     'total_pax': 0,
-                    'total_pax_c': 0,
-                    'total_pax_y': 0,
                     'total_capacity': 0,
                     'flights_count': 0
                 }
             
-            # The records already contain the calculated LF values from the Excel, 
-            # but the user complained about incorrect total passengers.
-            # The most accurate way is to re-calculate LF from total pax and capacity.
-            total_pax = sum(r['pax'] for r in records)
-            total_pax_c = sum(r['pax_c'] for r in records)
-            total_pax_y = sum(r['pax_y'] for r in records)
-            total_capacity = sum(r['tot_cap'] for r in records)
-            total_capacity_c = sum(r['c_cap'] for r in records)
-            total_capacity_y = sum(r['y_cap'] for r in records)
-            
+            total_pax = sum(r.pax for r in records)
+            total_capacity = sum(r.tot_cap for r in records)
             avg_lf = (total_pax / total_capacity) * 100 if total_capacity > 0 else 0.0
-            avg_lf_c = (total_pax_c / total_capacity_c) * 100 if total_capacity_c > 0 else 0.0
-            avg_lf_y = (total_pax_y / total_capacity_y) * 100 if total_capacity_y > 0 else 0.0
             
             return {
                 'avg_lf': round(avg_lf, 2),
-                'avg_lf_c': round(avg_lf_c, 2),
-                'avg_lf_y': round(avg_lf_y, 2),
                 'total_pax': total_pax,
-                'total_pax_c': total_pax_c,
-                'total_pax_y': total_pax_y,
                 'total_capacity': total_capacity,
                 'flights_count': len(records)
             }
         
-        inbound_stats = calc_stats(inbound)
-        outbound_stats = calc_stats(outbound)
-        combined_stats = calc_stats(inbound + outbound)
-        
-        summary = {
-            'inbound': inbound_stats,
-            'outbound': outbound_stats,
-            'combined': combined_stats,
-            'total_passengers': inbound_stats['total_pax'] + outbound_stats['total_pax']
-        }
-        
         return jsonify({
             'success': True,
-            'summary': summary
+            'summary': {
+                'inbound': calc_stats(inbound),
+                'outbound': calc_stats(outbound),
+                'combined': calc_stats(inbound + outbound)
+            }
         })
         
     except Exception as e:

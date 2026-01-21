@@ -817,43 +817,88 @@
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
             
-            // Load manifest data directly
-            let url = '/api/manifest/data?';
-            if (flight !== 'all') url += `flight=${flight}&`;
-            if (startDate) url += `start_date=${startDate}&`;
-            if (endDate) url += `end_date=${endDate}&`;
+            // Try to load from both manifest and flight-load endpoints
+            let allRecords = [];
             
+            // Load manifest data (actual passengers)
             try {
-                const response = await fetch(url);
-                const data = await response.json();
+                let manifestUrl = '/api/manifest/data?';
+                if (flight !== 'all') manifestUrl += `flight=${flight}&`;
+                if (startDate) manifestUrl += `start_date=${startDate}&`;
+                if (endDate) manifestUrl += `end_date=${endDate}&`;
                 
-                if (response.ok && data.data && data.data.length > 0) {
-                    // Transform manifest data for display
-                    const records = data.data.map(r => ({
-                        date: r.flight_date,
-                        flight: r.flight_number,
-                        capacity: r.total_capacity,
-                        forecast: r.forecast_passengers || 0,
-                        actual: r.total_passengers,
-                        load_factor: r.load_factor
-                    }));
-                    
-                    const transformedData = {
-                        records: records,
-                        avg_load_factor: data.average_load_factor,
-                        total_passengers: data.total_passengers,
-                        total_flights: data.record_count,
-                        forecast_accuracy: 0
-                    };
-                    
-                    updateStats(transformedData);
-                    updateCharts(transformedData);
-                    updateTable(records);
-                } else {
-                    showNoData();
+                const manifestResponse = await fetch(manifestUrl);
+                const manifestData = await manifestResponse.json();
+                
+                if (manifestResponse.ok && manifestData.data) {
+                    manifestData.data.forEach(r => {
+                        allRecords.push({
+                            date: r.flight_date,
+                            flight: r.flight_number,
+                            capacity: r.total_capacity,
+                            forecast: 0,
+                            actual: r.total_passengers,
+                            load_factor: r.load_factor,
+                            source: 'manifest'
+                        });
+                    });
                 }
-            } catch (error) {
-                console.error('Error loading data:', error);
+            } catch (e) {
+                console.log('No manifest data:', e);
+            }
+            
+            // Load forecast data from flight-load
+            try {
+                let forecastUrl = '/api/flight-load/data?';
+                if (flight !== 'all') forecastUrl += `flight=${flight}&`;
+                if (startDate) forecastUrl += `start_date=${startDate}&`;
+                if (endDate) forecastUrl += `end_date=${endDate}&`;
+                
+                const forecastResponse = await fetch(forecastUrl);
+                const forecastData = await forecastResponse.json();
+                
+                if (forecastResponse.ok && forecastData.records) {
+                    forecastData.records.forEach(r => {
+                        // Check if we already have this date/flight from manifest
+                        const existing = allRecords.find(ar => ar.date === r.date && ar.flight === r.flight);
+                        if (existing) {
+                            existing.forecast = r.forecast || 0;
+                        } else {
+                            allRecords.push({
+                                date: r.date,
+                                flight: r.flight,
+                                capacity: r.capacity,
+                                forecast: r.forecast || 0,
+                                actual: r.actual || 0,
+                                load_factor: r.load_factor,
+                                source: r.data_source || 'forecast'
+                            });
+                        }
+                    });
+                }
+            } catch (e) {
+                console.log('No forecast data:', e);
+            }
+            
+            // Sort by date descending
+            allRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (allRecords.length > 0) {
+                const totalPassengers = allRecords.reduce((sum, r) => sum + (r.actual || r.forecast || 0), 0);
+                const avgLoadFactor = allRecords.reduce((sum, r) => sum + (r.load_factor || 0), 0) / allRecords.length;
+                
+                const transformedData = {
+                    records: allRecords,
+                    avg_load_factor: avgLoadFactor,
+                    total_passengers: totalPassengers,
+                    total_flights: allRecords.length,
+                    forecast_accuracy: 0
+                };
+                
+                updateStats(transformedData);
+                updateCharts(transformedData);
+                updateTable(allRecords);
+            } else {
                 showNoData();
             }
         }
