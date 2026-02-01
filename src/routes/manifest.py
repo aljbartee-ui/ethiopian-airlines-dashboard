@@ -96,24 +96,25 @@ def parse_text_manifest(content):
             gender = match.group(4)
             seat = match.group(5) if match.group(5) else ''
             
-            # Extract final destination from the line
-            # Look for pattern like /ET00348/PZU/ or /.../.../.../
-            dest_match = re.search(r'/ET\d+/([A-Z]{3})/', line)
-            if dest_match:
-                final_dest = dest_match.group(1)
+            # Extract route code from the line
+            # For ET620 (inbound ADD->KWI): /ET00348/PZU/ means passenger came FROM PZU (origin)
+            # For ET621 (outbound KWI->ADD): /ET00348/PZU/ means passenger going TO PZU (destination)
+            route_match = re.search(r'/ET\d+/([A-Z]{3})/', line)
+            if route_match:
+                route_code = route_match.group(1)
             else:
-                # If no connecting flight, destination is ADD (or the main destination)
-                final_dest = flight_info['destination'] or 'ADD'
+                # If no connecting flight, use the main destination/origin
+                route_code = flight_info['destination'] or flight_info['origin'] or 'ADD'
             
             passenger = {
                 'number': pax_num,
                 'name': f"{last_name}/{first_name}",
                 'gender': gender,
                 'seat': seat,
-                'final_destination': final_dest
+                'route_code': route_code
             }
             flight_info['passengers'].append(passenger)
-            flight_info['route_breakdown'][final_dest] += 1
+            flight_info['route_breakdown'][route_code] += 1
             
             # Count by gender
             if gender == 'M':
