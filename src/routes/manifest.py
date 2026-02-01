@@ -103,8 +103,13 @@ def parse_text_manifest(content):
             if route_match:
                 route_code = route_match.group(1)
             else:
-                # If no connecting flight, use the main destination/origin
-                route_code = flight_info['destination'] or flight_info['origin'] or 'ADD'
+                # If no connecting flight:
+                # - For ET620 (inbound): passenger came from origin (ADD)
+                # - For ET621 (outbound): passenger going to destination
+                if flight_info['flight_number'] and '620' in flight_info['flight_number']:
+                    route_code = flight_info['origin'] or 'ADD'
+                else:
+                    route_code = flight_info['destination'] or 'KWI'
             
             passenger = {
                 'number': pax_num,
